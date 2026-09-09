@@ -1,0 +1,20 @@
+{
+    "agents": [
+        "claude_code",
+        "codex",
+        "cursor",
+        "grok_build",
+        "opencode"
+    ],
+    "cloud": true,
+    "skills": [
+        "infer-conventions",
+        "deploying-to-cloud",
+        "fortify-development",
+        "laravel-best-practices",
+        "testing-best-practices",
+        "wayfinder-development",
+        "inertia-vue-development",
+        "tailwindcss-development"
+    ]
+}
