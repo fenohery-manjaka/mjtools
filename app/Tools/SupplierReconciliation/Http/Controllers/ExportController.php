@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Tools\SupplierReconciliation\Export\ResultExporter;
 use App\Tools\SupplierReconciliation\Runs\ReconciliationRun;
 use App\Tools\SupplierReconciliation\Runs\RunAccess;
+use App\Tools\SupplierReconciliation\Runs\UsageLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -24,6 +25,8 @@ class ExportController extends Controller
         if ($reviewed === null) {
             return to_route('supplier-reconciliation.check', $run);
         }
+
+        UsageLog::record('exported', $run, ['format' => $format]);
 
         $name = 'supplier-reconciliation-'.now()->format('Y-m-d');
 

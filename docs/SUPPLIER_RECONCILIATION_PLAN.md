@@ -37,8 +37,8 @@ tests/
 
 **Règles de frontière**
 
-| Socle partagé (Platform) | SupplierReconciliation |
-|---|---|
+| Socle partagé (Platform)                                                                    | SupplierReconciliation                                                                                      |
+| ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | auth, users, settings, layouts, composants UI génériques, page d'accueil listant les outils | import, mapping, normalisation, moteur, résultats, revue, export, persistance des sessions de rapprochement |
 
 - Un outil = un dossier `app/Tools/<Tool>` + **un** service provider enregistré dans
@@ -101,7 +101,7 @@ Fichier ─► Import (RawTable) ─► détection en-têtes + mapping proposé 
   XLSX (première feuille non vide, via `openspout/openspout`, streaming).
 - XLS / PDF / images : refus explicite avec message (« enregistrez en XLSX ou CSV »).
 - Détection du type par contenu (signature ZIP / OLE / PDF), pas seulement par extension.
-- Limites (config) : 10 Mo, 10 000 lignes, 100 colonnes, taille décompressée XLSX bornée
+- Limites (config) : 10 Mo, 5 000 lignes, 100 colonnes, taille décompressée XLSX bornée
   (anti zip-bomb).
 - Erreurs expliquées : fichier vide, corrompu, aucun tableau exploitable, trop volumineux.
 - Le fichier brut n'est **jamais stocké** : il est lu depuis le fichier temporaire d'upload ;
@@ -115,13 +115,13 @@ Fichier ─► Import (RawTable) ─► détection en-têtes + mapping proposé 
 - Proposition automatique (mots-clés EN/FR + contenu), toujours modifiable ; chaque champ montre
   des valeurs d'exemple.
 - Conventions explicites par fichier, proposées puis confirmées :
-  - format de date (auto / JJ/MM / MM/JJ / AAAA-MM-JJ), ambiguïté signalée ;
-  - séparateur décimal (auto / point / virgule) ;
-  - **convention de signe** : les factures apparaissent en positif ou en négatif (montant
-    signé), ou dans la colonne Débit ou Crédit. Toutes les valeurs normalisées sont exprimées
-    dans la perspective du relevé fournisseur (facture > 0, avoir/paiement < 0). Une inversion est
-    une règle de fichier explicite et visible, jamais un ajustement ligne à ligne ;
-  - option « le signe vient de la colonne Type » quand les avoirs sont listés en positif.
+    - format de date (auto / JJ/MM / MM/JJ / AAAA-MM-JJ), ambiguïté signalée ;
+    - séparateur décimal (auto / point / virgule) ;
+    - **convention de signe** : les factures apparaissent en positif ou en négatif (montant
+      signé), ou dans la colonne Débit ou Crédit. Toutes les valeurs normalisées sont exprimées
+      dans la perspective du relevé fournisseur (facture > 0, avoir/paiement < 0). Une inversion est
+      une règle de fichier explicite et visible, jamais un ajustement ligne à ligne ;
+    - option « le signe vient de la colonne Type » quand les avoirs sont listés en positif.
 - Filtre fournisseur optionnel si le ledger contient plusieurs fournisseurs.
 - Contrôle avant analyse : lignes par fichier, champs ✓, lignes illisibles, conventions
   appliquées, **suggestion d'inversion de signe** si les références communes ont
@@ -255,16 +255,33 @@ décision humaine, lignes relevé/ledger (originaux), écart, raisons. Aucun mat
 ## 15. Ordre d'implémentation
 
 1. Domain + Normalization (+ tests) → 2. Result + Matching (+ datasets) → 3. Import + Mapping →
-4. Review + Export → 5. Runs + HTTP + provider → 6. UI → 7. Revue finale.
+2. Review + Export → 5. Runs + HTTP + provider → 6. UI → 7. Revue finale.
 
 ## 16. Décisions
 
-| Décision | Raison |
-|---|---|
-| `openspout/openspout ~5.3.0` pour XLSX | MIT, streaming, léger ; 5.3 est la dernière branche compatible PHP 8.3 (CI) |
-| Pas de support XLS | spec : optionnel ; complexité disproportionnée — message explicite |
-| Montants en entiers ×10⁴ | pas d'erreur d'arrondi flottant, comparaison exacte |
-| Seuils de date configurables (14 j / 7 j / 3 j) | spec §17 : à calibrer ; valeurs prudentes par défaut |
-| Références non identifiantes (sans chiffre) jamais auto-rapprochées | `PAYMENT` ↔ `PAYMENT` n'identifie pas un document |
-| Stockage en base (JSON) 24 h, pas de fichier brut conservé | confidentialité §40, simplicité |
+| Décision                                                                              | Raison                                                                            |
+| ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `openspout/openspout ~5.3.0` pour XLSX                                                | MIT, streaming, léger ; 5.3 est la dernière branche compatible PHP 8.3 (CI)       |
+| Pas de support XLS                                                                    | spec : optionnel ; complexité disproportionnée — message explicite                |
+| Montants en entiers ×10⁴                                                              | pas d'erreur d'arrondi flottant, comparaison exacte                               |
+| Seuils de date configurables (14 j / 7 j / 3 j)                                       | spec §17 : à calibrer ; valeurs prudentes par défaut                              |
+| Références non identifiantes (sans chiffre) jamais auto-rapprochées                   | `PAYMENT` ↔ `PAYMENT` n'identifie pas un document                                 |
+| Stockage en base (JSON) 24 h, pas de fichier brut conservé                            | confidentialité §40, simplicité                                                   |
 | Migrations et routes dans le module, config dans `config/supplier-reconciliation.php` | frontière d'outil réelle ; config au standard Laravel (compatible `config:cache`) |
+
+## 17. État à la fin de la V1 et limites connues
+
+- Implémenté : tout le parcours §6–§36 (voir tests `tests/Unit/Tools/SupplierReconciliation`
+  et `tests/Feature/Tools/SupplierReconciliation`).
+- Stockage du résultat en JSON par lignes (`Runs/ResultCodec`) : une requête reste sous
+  ~95 Mo de mémoire à la limite de 2 × 5 000 lignes.
+- Signaux d'usage (§49) : `Runs/UsageLog` journalise des compteurs uniquement
+  (`supplier-reconciliation.*` dans les logs), jamais de références ni de montants.
+- Limites connues :
+    - l'accès à une session de rapprochement suit la session navigateur
+      (`SESSION_LIFETIME`, 120 min d'inactivité par défaut) alors que les données sont
+      conservées 24 h ;
+    - une seule colonne de référence par fichier (pas de « référence externe » secondaire) ;
+    - « formatting » considère `INV-12-3` et `INV-123` comme identiques (séparateurs ignorés) ;
+    - pas de multi-devises, pas de XLS, première feuille non vide d'un XLSX seulement ;
+    - seuils de dates non encore calibrés sur des données réelles.

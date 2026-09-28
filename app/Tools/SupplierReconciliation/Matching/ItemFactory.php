@@ -36,7 +36,7 @@ final class ItemFactory
             statementIds: [$evidence->statement->id],
             ledgerIds: [$evidence->ledger->id],
             reasons: [...$extraReasons, ...$evidence->reasons()],
-            candidates: [$evidence->toCandidate()],
+            candidates: [$evidence->toCandidate(withReasons: false)],
             difference: $status === ItemStatus::AmountMismatch ? $evidence->difference() : null,
             flags: $flags,
         );
@@ -77,7 +77,7 @@ final class ItemFactory
             statementIds: $statementIds,
             ledgerIds: $ledgerIds,
             reasons: $reasons,
-            candidates: [new Candidate($statementIds, $ledgerIds, [], $reasons)],
+            candidates: [new Candidate($statementIds, $ledgerIds, [], [])],
             flags: [$groupSide === Side::Ledger ? ResultItem::FLAG_ONE_TO_MANY : ResultItem::FLAG_MANY_TO_ONE],
         );
     }

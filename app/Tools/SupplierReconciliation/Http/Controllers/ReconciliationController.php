@@ -10,6 +10,7 @@ use App\Tools\SupplierReconciliation\Mapping\PreparedSide;
 use App\Tools\SupplierReconciliation\Matching\ReconciliationEngine;
 use App\Tools\SupplierReconciliation\Runs\ReconciliationRun;
 use App\Tools\SupplierReconciliation\Runs\RunAccess;
+use App\Tools\SupplierReconciliation\Runs\UsageLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -58,6 +59,8 @@ class ReconciliationController extends Controller
         $report = (new PreflightCheck)->check(...$prepared);
 
         if (! $report['ready']) {
+            UsageLog::record('reconciliation_blocked', $run, ['problems' => count($report['blocking'])]);
+
             return to_route('supplier-reconciliation.check', $run)
                 ->withErrors(['reconcile' => 'Review required before reconciliation: '.implode(' ', $report['blocking'])]);
         }
@@ -65,10 +68,11 @@ class ReconciliationController extends Controller
         [$statement, $ledger] = $prepared;
         $result = $engine->reconcile($statement->built->transactions, $ledger->built->transactions);
 
-        $run->result = $result->toArray();
-        $run->decisions = [];
-        $run->reconciled_at = now()->toImmutable();
+        $run->storeResult($result);
         $run->save();
+
+        $counts = array_count_values(array_map(fn ($item): string => $item->status->value, $result->items));
+        UsageLog::record('reconciled', $run, ['transactions' => count($result->transactions), ...$counts]);
 
         return to_route('supplier-reconciliation.summary', $run);
     }

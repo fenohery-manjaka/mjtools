@@ -29,7 +29,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property array<string, mixed>|null $ledger_file
  * @property array<string, mixed>|null $ledger_table
  * @property array<string, mixed>|null $ledger_mapping
- * @property array<string, mixed>|null $result
+ * @property string|null $result Engine result as JSON lines (see ResultCodec), decoded on demand.
  * @property list<array<string, mixed>>|null $decisions
  * @property CarbonImmutable|null $reconciled_at
  * @property CarbonImmutable $expires_at
@@ -56,7 +56,6 @@ class ReconciliationRun extends Model
             'ledger_file' => 'array',
             'ledger_table' => 'array',
             'ledger_mapping' => 'array',
-            'result' => 'array',
             'decisions' => 'array',
             'reconciled_at' => 'immutable_datetime',
             'expires_at' => 'immutable_datetime',
@@ -126,7 +125,14 @@ class ReconciliationRun extends Model
 
     public function engineResult(): ?ReconciliationResult
     {
-        return $this->result === null ? null : ReconciliationResult::fromArray($this->result);
+        return $this->result === null ? null : (new ResultCodec)->decode($this->result);
+    }
+
+    public function storeResult(ReconciliationResult $result): void
+    {
+        $this->result = (new ResultCodec)->encode($result);
+        $this->decisions = [];
+        $this->reconciled_at = now()->toImmutable();
     }
 
     /**

@@ -5,6 +5,7 @@ namespace App\Tools\SupplierReconciliation\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Tools\SupplierReconciliation\Runs\ReconciliationRun;
 use App\Tools\SupplierReconciliation\Runs\RunAccess;
+use App\Tools\SupplierReconciliation\Runs\UsageLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -28,6 +29,7 @@ class CheckerController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $run = $this->access->create($request);
+        UsageLog::record('run_created', $run);
 
         return to_route('supplier-reconciliation.files.edit', $run);
     }
@@ -36,6 +38,7 @@ class CheckerController extends Controller
     {
         $this->access->ensure($request, $run);
 
+        UsageLog::record('deleted_by_user', $run);
         $run->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Your files and results have been deleted.']);

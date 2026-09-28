@@ -13,6 +13,7 @@ use App\Tools\SupplierReconciliation\Import\ImportException;
 use App\Tools\SupplierReconciliation\Mapping\ColumnDetector;
 use App\Tools\SupplierReconciliation\Runs\ReconciliationRun;
 use App\Tools\SupplierReconciliation\Runs\RunAccess;
+use App\Tools\SupplierReconciliation\Runs\UsageLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -59,6 +60,8 @@ class FileController extends Controller
         try {
             $raw = $importer->import($path);
         } catch (ImportException $e) {
+            UsageLog::record('import_failed', $run, ['side' => $side->value, 'reason' => $e->getMessage()]);
+
             return back()->withErrors(['file' => $e->getMessage()]);
         }
 
@@ -78,6 +81,8 @@ class FileController extends Controller
         $run->{"{$prefix}_mapping"} = $mapping->toArray();
         $run->discardResult();
         $run->save();
+
+        UsageLog::record('file_imported', $run, ['side' => $side->value, 'format' => $raw->format->value, 'rows' => count($raw->rows)]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => "{$side->label()} imported."]);
 

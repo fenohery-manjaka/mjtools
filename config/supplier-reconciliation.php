@@ -10,7 +10,7 @@ return [
 
     'limits' => [
         'max_file_kilobytes' => (int) env('SUPPLIER_RECONCILIATION_MAX_FILE_KB', 10_240),
-        'max_rows' => (int) env('SUPPLIER_RECONCILIATION_MAX_ROWS', 10_000),
+        'max_rows' => (int) env('SUPPLIER_RECONCILIATION_MAX_ROWS', 5_000),
         'max_columns' => 100,
     ],
 

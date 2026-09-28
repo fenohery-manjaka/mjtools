@@ -20,7 +20,7 @@ return new class extends Migration
             $table->json('ledger_file')->nullable();
             $table->json('ledger_table')->nullable();
             $table->json('ledger_mapping')->nullable();
-            $table->json('result')->nullable();
+            $table->longText('result')->nullable();
             $table->json('decisions')->nullable();
             $table->timestamp('reconciled_at')->nullable();
             $table->timestamp('expires_at')->index();

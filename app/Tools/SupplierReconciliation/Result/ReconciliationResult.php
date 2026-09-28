@@ -20,6 +20,9 @@ final readonly class ReconciliationResult
     /** @var array<string, string> transaction id => item id */
     private array $itemIdByTransaction;
 
+    /** @var array<string, ResultItem> */
+    private array $itemsById;
+
     /**
      * @param  list<Transaction>  $transactions
      * @param  list<ResultItem>  $items
@@ -39,8 +42,11 @@ final readonly class ReconciliationResult
         $this->transactions = $byId;
 
         $index = [];
+        $itemsById = [];
 
         foreach ($items as $item) {
+            $itemsById[$item->id] = $item;
+
             foreach ($item->transactionIds() as $id) {
                 if (isset($index[$id])) {
                     throw new InvalidArgumentException("Transaction [{$id}] belongs to more than one item.");
@@ -51,6 +57,7 @@ final readonly class ReconciliationResult
         }
 
         $this->itemIdByTransaction = $index;
+        $this->itemsById = $itemsById;
     }
 
     public function transaction(string $id): Transaction
@@ -60,13 +67,7 @@ final readonly class ReconciliationResult
 
     public function item(string $id): ?ResultItem
     {
-        foreach ($this->items as $item) {
-            if ($item->id === $id) {
-                return $item;
-            }
-        }
-
-        return null;
+        return $this->itemsById[$id] ?? null;
     }
 
     public function itemIdFor(string $transactionId): ?string

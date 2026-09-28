@@ -92,13 +92,16 @@ final readonly class PairEvidence
         return $score;
     }
 
-    public function toCandidate(): Candidate
+    /**
+     * @param  bool  $withReasons  False when the item already carries these reasons (single pair).
+     */
+    public function toCandidate(bool $withReasons = true): Candidate
     {
         return new Candidate(
             statementIds: [$this->statement->id],
             ledgerIds: [$this->ledger->id],
             comparisons: $this->comparisons(),
-            reasons: $this->reasons(),
+            reasons: $withReasons ? $this->reasons() : [],
         );
     }
 

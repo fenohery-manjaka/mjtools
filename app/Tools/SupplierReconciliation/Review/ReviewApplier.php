@@ -214,7 +214,7 @@ final class ReviewApplier
         if (count($statement) === 1 && count($ledger) === 1) {
             $evidence = PairEvidence::between($statement[0], $ledger[0], new ReferenceComparator);
             $reasons = [...$reasons, ...$evidence->reasons()];
-            $candidates[] = $evidence->toCandidate();
+            $candidates[] = $evidence->toCandidate(withReasons: false);
         }
 
         $difference = $this->total($statement)->minus($this->total($ledger));

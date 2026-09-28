@@ -15,6 +15,7 @@ use App\Tools\SupplierReconciliation\Review\ReviewedItem;
 use App\Tools\SupplierReconciliation\Review\ReviewedResult;
 use App\Tools\SupplierReconciliation\Runs\ReconciliationRun;
 use App\Tools\SupplierReconciliation\Runs\RunAccess;
+use App\Tools\SupplierReconciliation\Runs\UsageLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -103,6 +104,12 @@ class ReviewController extends Controller
         $run->decisions = array_map(fn (Decision $d): array => $d->toArray(), [...$decisions, $decision]);
         $run->save();
 
+        // A rejected automatic match is a false automatic match found by a user.
+        UsageLog::record('decision', $run, [
+            'action' => $decision->action->value,
+            'engine_status' => $decision->itemId === null ? null : $result->item($decision->itemId)?->status->value,
+        ]);
+
         Inertia::flash('toast', ['type' => 'success', 'message' => $decision->action->label().'.']);
 
         return back();
@@ -126,6 +133,8 @@ class ReviewController extends Controller
 
         $run->decisions = array_map(fn (Decision $d): array => $d->toArray(), $applied);
         $run->save();
+
+        UsageLog::record('decision_undone', $run);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Decision undone.']);
 
