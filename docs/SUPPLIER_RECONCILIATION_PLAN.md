@@ -42,8 +42,8 @@ tests/
 | auth, users, settings, layouts, composants UI génériques, page d'accueil listant les outils | import, mapping, normalisation, moteur, résultats, revue, export, persistance des sessions de rapprochement |
 
 - Un outil = un dossier `app/Tools/<Tool>` + **un** service provider enregistré dans
-  `bootstrap/providers.php`. Le provider charge ses routes, sa config, ses migrations, ses
-  commandes et sa planification. Ajouter un outil ne touche pas aux autres.
+  `bootstrap/providers.php`. Le provider charge ses routes, ses migrations, ses commandes et sa
+  planification ; sa configuration est dans `config/<tool>.php`. Ajouter un outil ne touche pas aux autres.
 - Le socle ne dépend jamais d'un outil. Un outil peut dépendre du socle (layout, UI).
 - Pas de registre d'outils dynamique, pas de système de plugins : la page d'accueil liste les
   outils en dur (un seul aujourd'hui). On généralisera quand un deuxième outil existera.
@@ -55,7 +55,7 @@ tests/
 
 ```
 app/Tools/SupplierReconciliation/
-  SupplierReconciliationServiceProvider.php, config.php, routes.php
+  SupplierReconciliationServiceProvider.php, routes.php   (config : config/supplier-reconciliation.php)
   database/migrations/
   Domain/          Transaction (modèle canonique), Side, DocumentType, Amount, CalendarDate
   Normalization/   ReferenceNormalizer, AmountParser, DateParser, formats, TransactionBuilder
@@ -267,4 +267,4 @@ décision humaine, lignes relevé/ledger (originaux), écart, raisons. Aucun mat
 | Seuils de date configurables (14 j / 7 j / 3 j) | spec §17 : à calibrer ; valeurs prudentes par défaut |
 | Références non identifiantes (sans chiffre) jamais auto-rapprochées | `PAYMENT` ↔ `PAYMENT` n'identifie pas un document |
 | Stockage en base (JSON) 24 h, pas de fichier brut conservé | confidentialité §40, simplicité |
-| Migrations/routes/config dans le module | frontière d'outil réelle, suppression = un dossier + une ligne |
+| Migrations et routes dans le module, config dans `config/supplier-reconciliation.php` | frontière d'outil réelle ; config au standard Laravel (compatible `config:cache`) |
