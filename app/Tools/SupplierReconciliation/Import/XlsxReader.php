@@ -97,7 +97,9 @@ final class XlsxReader
 
     private function cellToString(Cell $cell): string
     {
-        $value = $cell instanceof Cell\FormulaCell ? $cell->getComputedValue() : $cell->getValue();
+        // Formulas use their cached result. OpenSpout also reads text starting with "="
+        // as a formula without result: keep that text rather than losing it.
+        $value = $cell instanceof Cell\FormulaCell ? ($cell->getComputedValue() ?? $cell->getValue()) : $cell->getValue();
 
         return match (true) {
             $value === null => '',
