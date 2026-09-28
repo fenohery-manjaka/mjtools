@@ -128,6 +128,19 @@ final class PreflightCheck
             $warnings[] = "{$withoutReference} of {$count} lines in the {$name} have no usable reference: most results will need your review.";
         }
 
+        $supplierColumn = $mapping->column(Field::Supplier);
+
+        if ($supplierColumn !== null && $mapping->supplierFilter === null) {
+            $suppliers = count(array_unique(array_filter(
+                array_map(fn (string $v): string => mb_strtolower(trim($v)), $prepared->table->column($supplierColumn)),
+                fn (string $v): bool => $v !== '',
+            )));
+
+            if ($suppliers > 1) {
+                $warnings[] = "The {$name} contains lines of {$suppliers} different suppliers: choose the supplier of this statement, otherwise other suppliers' lines will be compared too.";
+            }
+        }
+
         $dateColumn = $mapping->column(Field::Date);
 
         if ($dateColumn !== null) {

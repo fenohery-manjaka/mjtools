@@ -239,6 +239,7 @@ final readonly class PairEvidence
         }
 
         return match ($this->reference) {
+            ReferenceRelation::Identical => trim($reference->original),
             ReferenceRelation::LeadingZeros => str_replace('|', '', $reference->zeroKey),
             ReferenceRelation::PrefixMissing, ReferenceRelation::PrefixDifferent => str_replace('|', '-', $reference->digitCore),
             default => $reference->typographicKey,

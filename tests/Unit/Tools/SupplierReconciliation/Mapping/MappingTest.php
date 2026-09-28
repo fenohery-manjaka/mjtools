@@ -206,6 +206,19 @@ class MappingTest extends TestCase
         $this->assertTrue($report['ready']);
     }
 
+    public function test_preflight_warns_when_the_ledger_mixes_suppliers(): void
+    {
+        $csv = "Ref,Supplier,Amount\nINV-1,ACME,10.00\nINV-2,Other Co,20.00\n";
+        $statement = $this->prepare(Side::Statement, "Ref,Amount\nINV-1,10.00\n", ['reference' => 0, 'amount' => 1]);
+        $ledger = $this->prepare(Side::Ledger, $csv, ['reference' => 0, 'supplier' => 1, 'amount' => 2]);
+
+        $warnings = implode("\n", (new PreflightCheck)->check($statement, $ledger)['warnings']);
+        $this->assertStringContainsString('2 different suppliers', $warnings);
+
+        $filtered = PreparedSide::prepare(Side::Ledger, $this->table($csv), new ColumnMapping(0, ['reference' => 0, 'supplier' => 1, 'amount' => 2], supplierFilter: 'ACME'));
+        $this->assertStringNotContainsString('different suppliers', implode("\n", (new PreflightCheck)->check($statement, $filtered)['warnings']));
+    }
+
     public function test_preflight_warns_about_ambiguous_dates(): void
     {
         $statement = $this->prepare(Side::Statement, "Ref,Date,Amount\nINV-1,01/02/2026,10.00\n", ['reference' => 0, 'date' => 1, 'amount' => 2]);

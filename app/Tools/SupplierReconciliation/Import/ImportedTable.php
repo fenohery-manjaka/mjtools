@@ -61,16 +61,16 @@ final readonly class ImportedTable
     }
 
     /**
-     * First non-empty values of a column, for previews.
+     * First distinct non-empty values of a column, for previews.
      *
      * @return list<string>
      */
     public function samples(int $index, int $count = 3): array
     {
-        return array_slice(array_values(array_filter(
+        return array_slice(array_values(array_unique(array_filter(
             $this->column($index),
             fn (string $value): bool => trim($value) !== '',
-        )), 0, $count);
+        ))), 0, $count);
     }
 
     public static function columnLetter(int $index): string
