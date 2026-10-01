@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { Check } from '@lucide/vue';
+import { Check, Clock } from '@lucide/vue';
 import { computed } from 'vue';
 import {
     check,
@@ -56,16 +56,38 @@ const steps = computed(() => {
 const currentIndex = computed(() =>
     steps.value.findIndex((step) => step.key === props.current),
 );
+
+// When the files, results and decisions of this run are deleted automatically.
+const deletedAt = computed(() =>
+    new Date(props.run.expires_at).toLocaleString('en-GB', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+    }),
+);
 </script>
 
 <template>
     <div class="mb-8 sm:mb-10">
-        <Link
-            :href="index()"
-            class="text-muted-foreground hover:text-foreground text-xs font-medium tracking-[0.16em] uppercase"
+        <div
+            class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1"
         >
-            Supplier Statement Checker
-        </Link>
+            <Link
+                :href="index()"
+                class="text-muted-foreground hover:text-foreground text-xs font-medium tracking-[0.16em] uppercase"
+            >
+                Supplier Statement Checker
+            </Link>
+            <p
+                class="text-muted-foreground flex items-center gap-1.5 text-xs"
+                :title="`Your files, results and decisions are kept in this browser until ${deletedAt}, then deleted automatically.`"
+            >
+                <Clock class="size-3.5" />
+                Deleted automatically on {{ deletedAt }}
+            </p>
+        </div>
         <nav aria-label="Reconciliation steps" class="mt-3 overflow-x-auto">
             <ol
                 class="flex min-w-max items-center gap-1 text-sm sm:min-w-0 sm:gap-2"

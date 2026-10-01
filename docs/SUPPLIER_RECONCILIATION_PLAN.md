@@ -237,8 +237,8 @@ Une confirmation humaine n'est jamais présentée comme automatique.
 ## 11. Persistance, confidentialité, sécurité (§40)
 
 - Pas de compte requis. Une session de rapprochement (`supplier_reconciliation_runs`, ULID)
-  est liée à la session navigateur (jeton aléatoire stocké en session, comparé en temps
-  constant). Accès refusé (404) sinon.
+  est liée au navigateur (jeton aléatoire stocké en session et dans un cookie chiffré HttpOnly
+  valable pendant la rétention, comparé en temps constant). Accès refusé (404) sinon.
 - Données conservées : cellules extraites, mapping, résultat, décisions. Suppression
   automatique après 24 h (commande planifiée), suppression immédiate possible par l'utilisateur.
 - Uploads : taille/extension/contenu validés, fichiers jamais écrits sur disque applicatif,
@@ -332,9 +332,6 @@ décision humaine, lignes relevé/ledger (originaux), écart, raisons. Aucun mat
 - Signaux d'usage (§49) : `Runs/UsageLog` journalise des compteurs uniquement
   (`supplier-reconciliation.*` dans les logs), jamais de références ni de montants.
 - Limites connues :
-    - l'accès à une session de rapprochement suit la session navigateur
-      (`SESSION_LIFETIME`, 120 min d'inactivité par défaut) alors que les données sont
-      conservées 24 h ;
     - une seule colonne de référence par fichier (pas de « référence externe » secondaire) ;
     - « formatting » considère `INV-12-3` et `INV-123` comme identiques (séparateurs ignorés) ;
     - pas de multi-devises, pas de XLS, première feuille non vide d'un XLSX seulement ;

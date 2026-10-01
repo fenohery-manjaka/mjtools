@@ -4,6 +4,7 @@ namespace Tests\Feature\Tools\SupplierReconciliation;
 
 use App\Tools\SupplierReconciliation\Domain\Side;
 use App\Tools\SupplierReconciliation\Runs\ReconciliationRun;
+use App\Tools\SupplierReconciliation\Runs\RunAccess;
 use DateTimeImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -237,6 +238,28 @@ class ReconciliationFlowTest extends TestCase
         $this->get(route('supplier-reconciliation.export', [$run, 'csv']))->assertNotFound();
         $this->post(route('supplier-reconciliation.files.store', [$run, 'statement']), ['file' => $this->statementCsv()])->assertNotFound();
         $this->delete(route('supplier-reconciliation.runs.destroy', $run))->assertNotFound();
+    }
+
+    public function test_the_owner_cookie_outlives_the_session_until_the_retention_ends(): void
+    {
+        $response = $this->post(route('supplier-reconciliation.runs.store'));
+        $cookie = $response->getCookie(RunAccess::COOKIE, decrypt: true);
+        $run = ReconciliationRun::query()->latest()->firstOrFail();
+
+        $this->assertNotNull($cookie);
+        $this->assertTrue($cookie->isHttpOnly());
+        $this->assertEqualsWithDelta(now()->addHours(24)->getTimestamp(), $cookie->getExpiresTime(), 5);
+
+        // The session expired, the browser still holds the cookie.
+        $this->flushSession();
+        $this->withCookie(RunAccess::COOKIE, (string) $cookie->getValue())
+            ->get(route('supplier-reconciliation.files.edit', $run))
+            ->assertOk();
+
+        $this->flushSession();
+        $this->withCookie(RunAccess::COOKIE, str_repeat('x', 64))
+            ->get(route('supplier-reconciliation.files.edit', $run))
+            ->assertNotFound();
     }
 
     public function test_expired_runs_are_unavailable_and_purged(): void
