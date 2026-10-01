@@ -308,9 +308,9 @@ décision humaine, lignes relevé/ledger (originaux), écart, raisons. Aucun mat
 | Stockage en base (JSON) 24 h, pas de fichier brut conservé                            | confidentialité §40, simplicité                                                   |
 | Migrations et routes dans le module, config dans `config/supplier-reconciliation.php` | frontière d'outil réelle ; config au standard Laravel (compatible `config:cache`) |
 | Aucune API d'IA payante dans le chemin principal                                      | coût prévisible, confidentialité, reproductibilité et absence de dépendance       |
-| « Mémoire » = données structurées, pas machine learning                               | mappings, conventions et décisions sont explicitement sauvegardés                |
+| « Mémoire » = données structurées, pas machine learning                               | mappings, conventions et décisions sont explicitement sauvegardés                 |
 | Une devise par rapprochement avant le multi-devise                                    | empêcher les comparaisons incohérentes sans introduire de conversion              |
-| Contrôle de solde facultatif                                                           | tous les relevés ne contiennent pas un solde initial et final vérifiables          |
+| Contrôle de solde facultatif                                                          | tous les relevés ne contiennent pas un solde initial et final vérifiables         |
 
 ## 17. État actuel du périmètre A et limites connues
 

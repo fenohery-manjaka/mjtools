@@ -37,119 +37,125 @@ encore ni clients, ni fournisseurs, ni mappings sauvegardés, ni historique comm
 
 ## A. Socle mjtools
 
-| Élément | État | Notes |
-| --- | --- | --- |
-| Laravel 13, Inertia 3, Vue 3, TypeScript, Tailwind 4 | ✅ | Socle installé |
-| Architecture modulaire `app/Tools/<Tool>` | ✅ | SupplierReconciliation est le premier module |
-| Authentification Fortify, 2FA et passkeys | ✅ | Pas encore reliée au produit payant |
-| Page d'accueil listant les outils | 🟡 | Le positionnement « finance teams » doit être corrigé |
-| Nom local de l'application | ⚠️ | `.env` utilise encore `APP_NAME=Laravel`; `.env.example` utilise `mjtools` |
-| Traductions | ⏸️ | Interface anglaise et textes en dur; internationalisation prévue plus tard |
+| Élément                                              | État | Notes                                                                      |
+| ---------------------------------------------------- | ---- | -------------------------------------------------------------------------- |
+| Laravel 13, Inertia 3, Vue 3, TypeScript, Tailwind 4 | ✅   | Socle installé                                                             |
+| Architecture modulaire `app/Tools/<Tool>`            | ✅   | SupplierReconciliation est le premier module                               |
+| Authentification Fortify, 2FA et passkeys            | ✅   | Pas encore reliée au produit payant                                        |
+| Page d'accueil listant les outils                    | 🟡   | Le positionnement « finance teams » doit être corrigé                      |
+| Nom local de l'application                           | ⚠️   | `.env` utilise encore `APP_NAME=Laravel`; `.env.example` utilise `mjtools` |
+| Traductions                                          | ⏸️   | Interface anglaise et textes en dur; internationalisation prévue plus tard |
 
 ## B. Import et préparation
 
-| Élément | État | Notes |
-| --- | --- | --- |
-| Import CSV | ✅ | Séparateur et encodages courants détectés |
-| Import XLSX | 🟡 | Code présent; OpenSpout absent du `vendor` local au dernier contrôle |
-| Refus explicite XLS/PDF/images | ✅ | Conforme au périmètre A |
-| Limites et protection ZIP bomb | ✅ | Taille, lignes, colonnes et taille décompressée |
-| Détection et modification de la ligne d'en-tête | ✅ | Fonctionnel |
-| Mapping des colonnes et valeurs d'exemple | ✅ | Référence, date, montants, type, description, fournisseur |
-| Conventions date, décimales et signes | ✅ | Confirmables par fichier |
-| Filtre fournisseur | ✅ | Disponible si la colonne est mappée |
-| Fichiers imparfaits courants | 🟡 | Plusieurs cas couverts; corpus réel à renforcer |
-| Choix de feuille XLSX | 🔴 | Première feuille non vide uniquement |
-| Référence secondaire | 🔴 | Une seule colonne actuellement |
-| Devise unique et garde-fous | 🔴 | Priorité A2 |
-| Contrôle facultatif du solde | 🔴 | Priorité A2 |
-| PDF texte / OCR | ⏸️ | Périmètre C après validation |
+| Élément                                         | État | Notes                                                                |
+| ----------------------------------------------- | ---- | -------------------------------------------------------------------- |
+| Import CSV                                      | ✅   | Séparateur et encodages courants détectés                            |
+| Import XLSX                                     | 🟡   | Code présent; OpenSpout absent du `vendor` local au dernier contrôle |
+| Refus explicite XLS/PDF/images                  | ✅   | Conforme au périmètre A                                              |
+| Limites et protection ZIP bomb                  | ✅   | Taille, lignes, colonnes et taille décompressée                      |
+| Détection et modification de la ligne d'en-tête | ✅   | Fonctionnel                                                          |
+| Mapping des colonnes et valeurs d'exemple       | ✅   | Référence, date, montants, type, description, fournisseur            |
+| Conventions date, décimales et signes           | ✅   | Confirmables par fichier                                             |
+| Filtre fournisseur                              | ✅   | Disponible si la colonne est mappée                                  |
+| Fichiers imparfaits courants                    | 🟡   | Plusieurs cas couverts; corpus réel à renforcer                      |
+| Choix de feuille XLSX                           | 🔴   | Première feuille non vide uniquement                                 |
+| Référence secondaire                            | 🔴   | Une seule colonne actuellement                                       |
+| Devise unique et garde-fous                     | 🔴   | Priorité A2                                                          |
+| Contrôle facultatif du solde                    | 🔴   | Priorité A2                                                          |
+| PDF texte / OCR                                 | ⏸️   | Périmètre C après validation                                         |
 
 ## C. Moteur de rapprochement
 
-| Élément | État | Notes |
-| --- | --- | --- |
-| Conservation des valeurs originales | ✅ | Normalisation séparée |
-| Références, montants et dates normalisés | ✅ | Montants sans flottants |
-| Correspondances exactes et normalisées | ✅ | Moteur progressif déterministe |
-| Tolérance de date configurable | ✅ | Seuils à calibrer sur données réelles |
-| Candidats et ambiguïtés | ✅ | Aucun choix arbitraire |
-| Écarts de montant | ✅ | Différence explicitée sans jugement comptable |
-| Doublons | ✅ | Statement et ledger |
-| One-to-many / many-to-one simple | ✅ | Proposition, jamais auto-validation |
-| Avoirs, paiements et signes opposés | ✅ | Couverts par le moteur et les tests |
-| Éléments absents et timing difference | ✅ | Missing in Ledger / Ledger Only |
-| Explications détaillées | ✅ | Raisons, comparaisons et transformations |
-| Corpus réaliste suffisamment diversifié | 🟡 | Validation terrain manquante |
-| Benchmark contre Excel/IA généraliste | 🔴 | À créer pour mesurer l'avantage réel |
+| Élément                                  | État | Notes                                         |
+| ---------------------------------------- | ---- | --------------------------------------------- |
+| Conservation des valeurs originales      | ✅   | Normalisation séparée                         |
+| Références, montants et dates normalisés | ✅   | Montants sans flottants                       |
+| Correspondances exactes et normalisées   | ✅   | Moteur progressif déterministe                |
+| Tolérance de date configurable           | ✅   | Seuils à calibrer sur données réelles         |
+| Candidats et ambiguïtés                  | ✅   | Aucun choix arbitraire                        |
+| Écarts de montant                        | ✅   | Différence explicitée sans jugement comptable |
+| Doublons                                 | ✅   | Statement et ledger                           |
+| One-to-many / many-to-one simple         | ✅   | Proposition, jamais auto-validation           |
+| Avoirs, paiements et signes opposés      | ✅   | Couverts par le moteur et les tests           |
+| Éléments absents et timing difference    | ✅   | Missing in Ledger / Ledger Only               |
+| Explications détaillées                  | ✅   | Raisons, comparaisons et transformations      |
+| Corpus réaliste suffisamment diversifié  | 🟡   | Validation terrain manquante                  |
+| Benchmark contre Excel/IA généraliste    | 🔴   | À créer pour mesurer l'avantage réel          |
 
 ## D. Parcours et résultats
 
-| Élément | État | Notes |
-| --- | --- | --- |
-| Démarrage sans compte | ✅ | Fonctionnel |
-| Upload, mapping et preflight | ✅ | Fonctionnel |
-| Synthèse centrée sur les exceptions | ✅ | Le pourcentage décrit le travail évité |
-| Revue filtrée | ✅ | Matches masqués par défaut |
-| Confirm, Reject, Manual Match, Defer, Undo | ✅ | Décisions séparées du moteur |
-| Export CSV | ✅ | Protection formula injection |
-| Export XLSX | 🟡 | Code présent; dépendance locale à restaurer |
-| Classeur d'audit enrichi | 🟡 | Export existant à renforcer avant l'offre Cabinet |
-| Jeu d'exemple en un clic | 🔴 | Priorité avant publication |
-| Design et confiance visuelle | 🟡 | Parcours utilisable, direction visuelle à travailler |
+| Élément                                    | État | Notes                                                |
+| ------------------------------------------ | ---- | ---------------------------------------------------- |
+| Démarrage sans compte                      | ✅   | Fonctionnel                                          |
+| Upload, mapping et preflight               | ✅   | Fonctionnel                                          |
+| Synthèse centrée sur les exceptions        | ✅   | Le pourcentage décrit le travail évité               |
+| Revue filtrée                              | ✅   | Matches masqués par défaut                           |
+| Confirm, Reject, Manual Match, Defer, Undo | ✅   | Décisions séparées du moteur                         |
+| Export CSV                                 | ✅   | Protection formula injection                         |
+| Export XLSX                                | 🟡   | Code présent; dépendance locale à restaurer          |
+| Classeur d'audit enrichi                   | 🟡   | Export existant à renforcer avant l'offre Cabinet    |
+| Jeu d'exemple en un clic                   | 🔴   | Priorité avant publication                           |
+| Design et confiance visuelle               | 🟡   | Parcours utilisable, direction visuelle à travailler |
 
 ## E. Persistance et confidentialité
 
-| Élément | État | Notes |
-| --- | --- | --- |
-| Session anonyme liée au navigateur | ✅ | Jeton aléatoire haché |
-| Fichier brut non conservé | ✅ | Cellules extraites persistées temporairement |
-| Rétention 24 h et purge | ✅ | Suppression manuelle disponible |
-| Isolation des sessions | ✅ | Couverture Feature présente |
-| Durée session/rétention cohérente | ⚠️ | Session 120 min par défaut contre rétention 24 h |
-| Compteurs sans données comptables | ✅ | `UsageLog` présent |
-| Funnel produit complet | 🟡 | Intention payante et retours à ajouter |
-| Chiffrement et isolation multi-tenant | 🔴 | Obligatoires avec le périmètre B |
+| Élément                               | État | Notes                                            |
+| ------------------------------------- | ---- | ------------------------------------------------ |
+| Session anonyme liée au navigateur    | ✅   | Jeton aléatoire haché                            |
+| Fichier brut non conservé             | ✅   | Cellules extraites persistées temporairement     |
+| Rétention 24 h et purge               | ✅   | Suppression manuelle disponible                  |
+| Isolation des sessions                | ✅   | Couverture Feature présente                      |
+| Durée session/rétention cohérente     | ⚠️   | Session 120 min par défaut contre rétention 24 h |
+| Compteurs sans données comptables     | ✅   | `UsageLog` présent                               |
+| Funnel produit complet                | 🟡   | Intention payante et retours à ajouter           |
+| Chiffrement et isolation multi-tenant | 🔴   | Obligatoires avec le périmètre B                 |
 
 ## F. Qualité et environnement
 
-Dernier contrôle connu :
+Dernier contrôle complet (1er octobre 2026, branche `feat/a1-a2-free-checker`) :
 
-- 185 tests SupplierReconciliation détectés ;
-- 170 réussis ;
-- 15 erreurs d'environnement, sans assertion métier en échec ;
-- 12 erreurs dues à l'extension `pdo_sqlite` absente du PHP local ;
-- 3 erreurs dues à OpenSpout présent dans Composer mais absent du `vendor` local ;
-- `vue-tsc --noEmit` réussi ;
+- `php artisan test` : 224 tests, 224 réussis (8 911 assertions) ;
+- `pint --test`, `phpstan analyse` (niveau 7), `npm run check` et `npm run types:check` : réussis ;
 - migration MySQL `supplier_reconciliation_runs` corrigée et exécutée le 30 septembre 2026.
+
+Environnement de référence local (Laragon, PHP 8.3) :
+
+- extensions `pdo_sqlite` et `sqlite3` activées dans `php.ini` (les tests utilisent SQLite en
+  mémoire) ;
+- `composer install` pour disposer d'OpenSpout dans `vendor` ;
+- `npm run build` avant les tests Feature qui rendent une page Inertia : un manifest Vite périmé
+  provoque une erreur 500 (`Unable to locate file in Vite manifest`) ;
+- les fichiers de skills générés par Laravel Boost (`.agents`, `.claude`, `.cursor`, `.grok`) sont
+  exclus du formatage `vp`.
 
 Ces chiffres doivent être remplacés par le prochain résultat complet, pas simplement complétés.
 
 ## G. Premier payant — périmètre B
 
-| Élément | État |
-| --- | --- |
-| Conversion d'un run gratuit vers un compte | 🔴 |
-| Workspace | 🔴 |
-| Clients et fournisseurs | 🔴 |
-| Mapping et conventions sauvegardés | 🔴 |
-| Empreinte de structure et détection de dérive | 🔴 |
-| Nouvelle période avec mapping précédent | 🔴 |
-| Historique simple et reprise | 🔴 |
-| Quotas et facturation | 🔴 |
-| Sécurité et rétention des comptes payants | 🔴 |
+| Élément                                       | État |
+| --------------------------------------------- | ---- |
+| Conversion d'un run gratuit vers un compte    | 🔴   |
+| Workspace                                     | 🔴   |
+| Clients et fournisseurs                       | 🔴   |
+| Mapping et conventions sauvegardés            | 🔴   |
+| Empreinte de structure et détection de dérive | 🔴   |
+| Nouvelle période avec mapping précédent       | 🔴   |
+| Historique simple et reprise                  | 🔴   |
+| Quotas et facturation                         | 🔴   |
+| Sécurité et rétention des comptes payants     | 🔴   |
 
 ## H. Après validation — périmètre C
 
-| Élément | État |
-| --- | --- |
-| Batch multi-fournisseurs | ⏸️ |
-| Continuité des exceptions | ⏸️ |
-| PDF texte | ⏸️ |
-| OCR local | ⏸️ |
-| Réception par email | ⏸️ |
-| Intégrations comptables ciblées | ⏸️ |
-| Équipes et audit avancé | ⏸️ |
+| Élément                         | État |
+| ------------------------------- | ---- |
+| Batch multi-fournisseurs        | ⏸️   |
+| Continuité des exceptions       | ⏸️   |
+| PDF texte                       | ⏸️   |
+| OCR local                       | ⏸️   |
+| Réception par email             | ⏸️   |
+| Intégrations comptables ciblées | ⏸️   |
+| Équipes et audit avancé         | ⏸️   |
 
 ## Prochain jalon : Free Checker publiable
 
@@ -177,10 +183,11 @@ Ces chiffres doivent être remplacés par le prochain résultat complet, pas sim
 
 ## Journal des changements
 
-| Date | Changement | Preuve |
-| --- | --- | --- |
-| 2026-10-01 | Création du suivi et séparation des périmètres A/B/C | Spec et plan mis à jour |
-| 2026-09-30 | Migration MySQL corrigée (`TIMESTAMP` → `DATETIME`) | `php artisan migrate` réussi |
+| Date       | Changement                                            | Preuve                                    |
+| ---------- | ----------------------------------------------------- | ----------------------------------------- |
+| 2026-10-01 | Environnement de tests rétabli : suite complète verte | 224/224, pint, phpstan, vp check, vue-tsc |
+| 2026-10-01 | Création du suivi et séparation des périmètres A/B/C  | Spec et plan mis à jour                   |
+| 2026-09-30 | Migration MySQL corrigée (`TIMESTAMP` → `DATETIME`)   | `php artisan migrate` réussi              |
 
 ## Règle de maintenance
 

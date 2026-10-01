@@ -105,9 +105,10 @@ Ne pas affirmer que le projet est vert si une partie des contrôles n'a pas pu �
 
 ## Problèmes d'environnement connus
 
-Au dernier contrôle documenté, l'extension PHP `pdo_sqlite` manquait et OpenSpout était verrouillé
-dans Composer mais absent du `vendor` local. Ces problèmes empêchaient 15 tests de s'exécuter, sans
-échec d'assertion métier observé. Consulter le suivi d'avancement avant de reprendre ce diagnostic.
+Les tests utilisent SQLite en mémoire (`pdo_sqlite` requis), OpenSpout doit être installé via
+`composer install`, et les tests Feature qui rendent une page Inertia exigent un manifest Vite à
+jour (`npm run build`). Le détail et le dernier résultat complet sont dans
+`docs/IMPLEMENTATION_STATUS.md` (section F).
 
 ## Langue et textes
 

@@ -1,4 +1,5 @@
 # CAHIER DES CHARGES FONCTIONNEL
+
 ## Supplier Reconciliation — Free Checker et produit récurrent
 
 **Statut :** Document fonctionnel de référence  
@@ -367,7 +368,7 @@ Une seconde représentation peut être utilisée pour la comparaison.
 
 Exemples :
 
-` INV-004583 `
+`INV-004583`
 
 peut être normalisé pour permettre une comparaison avec :
 
@@ -786,18 +787,23 @@ Exemple :
 **347 transactions analyzed**
 
 ### 318
+
 Matched automatically
 
 ### 12
+
 Possible matches
 
 ### 9
+
 Missing in ledger
 
 ### 3
+
 Amount mismatches
 
 ### 5
+
 Need review
 
 Puis l'information principale :
@@ -1260,27 +1266,35 @@ intéressantes, et le périmètre C ne doit pas être traité comme un prérequi
 Le moteur devra au minimum être évalué sur :
 
 ### Exact
+
 Même référence, montant et date.
 
 ### Format de référence
+
 `INV-123` ↔ `INV123`
 
 ### Casse
+
 `inv-123` ↔ `INV-123`
 
 ### Espaces
+
 `INV 123` ↔ `INV123`
 
 ### Zéros
+
 `INV-000123` ↔ `INV-123`
 
 ### Préfixe différent
+
 `INV-00123` ↔ `123`
 
 ### Montant formaté différemment
+
 `1 240,00` ↔ `1240.00`
 
 ### Date différente
+
 12/08 ↔ 13/08.
 
 ### Référence identique / montant différent
@@ -1550,7 +1564,7 @@ Nous construisons exactement :
 
 **Supplier Statement CSV/XLSX**
 
-+
+-
 
 **AP Ledger CSV/XLSX**
 
