@@ -363,15 +363,12 @@ par catégorie sans total trompeur). Une colonne _Currency_ figure dans les deux
     - pas de multi-devises, pas de XLS ;
     - seuils de dates non encore calibrés sur des données réelles.
 
-Les éléments suivants restent à finaliser avant de considérer le Checker comme prêt à publier :
+Les éléments A1/A2 sont livrés (voir `IMPLEMENTATION_STATUS.md`). Il reste, avant publication :
 
-- exécution verte de la suite dans l'environnement de référence ;
-- validation sur un corpus de fichiers réels anonymisés ou synthétiques réalistes ;
-- devise unique et blocage des incohérences ;
-- contrôle facultatif du solde ;
-- jeu d'exemple et mesure du parcours complet ;
-- positionnement, marque et textes de l'interface à stabiliser ;
-- instrumentation du signal d'intérêt pour la sauvegarde d'un fournisseur.
+- valider le moteur sur des fichiers réels anonymisés (`php artisan supplier-reconciliation:corpus
+<dossier>`), et calibrer les seuils de dates si nécessaire ;
+- relire le parcours et les textes avec un regard humain ;
+- publier, puis observer les signaux (`supplier-reconciliation:interest`, journaux d'usage).
 
 ## 18. Architecture du premier payant minimal — périmètre B
 

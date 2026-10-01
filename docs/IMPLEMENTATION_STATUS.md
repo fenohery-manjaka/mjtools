@@ -1,8 +1,9 @@
 # Suivi d'avancement — Supplier Reconciliation
 
-**Dernière mise à jour :** 1 octobre 2026  
-**Phase active :** A1 — stabilisation du Free Checker  
-**Statut global :** parcours principal implémenté, pas encore prêt pour une publication commerciale
+**Dernière mise à jour :** 2 octobre 2026  
+**Phase active :** fin de A2 — Free Checker complet, validation sur fichiers réels avant publication  
+**Statut global :** jalon A techniquement atteint sur la branche `feat/a1-a2-free-checker` ; reste à
+valider sur de vrais fichiers anonymisés, relire et publier
 
 Ce document décrit l'état réel du produit. Il indique ce qui est terminé, partiel, bloqué ou non
 commencé. Il doit être mis à jour après chaque changement matériel.
@@ -29,8 +30,14 @@ En cas de contradiction, vérifier le code, signaler l'écart et remettre les do
 Le Free Checker possède un parcours de bout en bout : session anonyme, import de deux fichiers,
 mapping, contrôle préalable, rapprochement, synthèse, revue humaine et export.
 
-Le moteur est avancé et conservateur. Le produit doit encore être stabilisé dans un environnement
-reproductible, testé sur un corpus représentatif et complété par la devise et le contrôle du solde.
+Le moteur est avancé et conservateur. L'environnement de tests est vert et documenté ; un corpus
+de 6 cas de fichiers réalistes (96 lignes) passe sans aucun faux auto-match et a permis de corriger
+plusieurs défauts d'import. La devise unique, le contrôle facultatif du solde, le jeu d'exemple,
+l'export renforcé, la mesure de l'intention payante et une identité visuelle propre à mjtools sont
+en place.
+
+Ce qui manque avant publication : des fichiers réels anonymisés dans le corpus (les cas actuels
+sont synthétiques), une relecture humaine du parcours et des textes, puis la mise en ligne.
 
 Le premier payant n'est pas implémenté. L'authentification du starter kit existe, mais elle ne porte
 encore ni clients, ni fournisseurs, ni mappings sauvegardés, ni historique commercial.
@@ -113,9 +120,11 @@ encore ni clients, ni fournisseurs, ni mappings sauvegardés, ni historique comm
 
 ## F. Qualité et environnement
 
-Dernier contrôle complet (1er octobre 2026, branche `feat/a1-a2-free-checker`) :
+Dernier contrôle complet (2 octobre 2026, branche `feat/a1-a2-free-checker`) :
 
-- `php artisan test` : 224 tests, 224 réussis (8 911 assertions) ;
+- `php artisan test` : 297 tests, 297 réussis ;
+- corpus étiqueté (`php artisan supplier-reconciliation:corpus`) : 6 cas, 96 lignes, 0 faux
+  auto-match ;
 - `pint --test`, `phpstan analyse` (niveau 7), `npm run check` et `npm run types:check` : réussis ;
 - migration MySQL `supplier_reconciliation_runs` corrigée et exécutée le 30 septembre 2026.
 
@@ -159,27 +168,28 @@ Ces chiffres doivent être remplacés par le prochain résultat complet, pas sim
 
 ## Prochain jalon : Free Checker publiable
 
-1. restaurer un environnement de tests entièrement vert ;
-2. constituer un corpus réaliste de fichiers propres et imparfaits ;
-3. corriger les défauts révélés sans élargir le périmètre ;
-4. ajouter la devise unique et ses blocages ;
-5. ajouter le contrôle facultatif du solde ;
-6. renforcer l'export et ajouter un jeu d'exemple ;
-7. finaliser design, positionnement et textes de confiance ;
-8. compléter les mesures et le CTA « sauvegarder ce fournisseur » ;
-9. publier et observer avant de commencer le périmètre B complet.
+1. ✅ restaurer un environnement de tests entièrement vert ;
+2. 🟡 constituer un corpus réaliste de fichiers propres et imparfaits (6 cas synthétiques
+   réalistes ; ajouter des fichiers réels anonymisés) ;
+3. ✅ corriger les défauts révélés sans élargir le périmètre ;
+4. ✅ ajouter la devise unique et ses blocages ;
+5. ✅ ajouter le contrôle facultatif du solde ;
+6. ✅ renforcer l'export et ajouter un jeu d'exemple ;
+7. ✅ finaliser design, positionnement et textes de confiance (relecture humaine conseillée) ;
+8. ✅ compléter les mesures et le CTA « sauvegarder ce fournisseur » ;
+9. 🔴 publier et observer avant de commencer le périmètre B complet.
 
 ## Définition de « terminé » pour le jalon actuel
 
-- suite de tests verte dans l'environnement documenté ;
-- aucun faux auto-match dans le corpus étiqueté ;
-- devise confirmée ou blocage explicite ;
-- solde marqué vérifié, incohérent ou indisponible ;
-- parcours démontrable avec un jeu d'exemple ;
-- export exploitable ;
-- confidentialité et suppression visibles avant l'upload ;
-- métriques du parcours et de l'intention payante disponibles ;
-- aucun élément du périmètre B ou C requis pour publier.
+- ✅ suite de tests verte dans l'environnement documenté ;
+- ✅ aucun faux auto-match dans le corpus étiqueté (à confirmer sur des fichiers réels) ;
+- ✅ devise confirmée ou blocage explicite ;
+- ✅ solde marqué vérifié, incohérent ou indisponible ;
+- ✅ parcours démontrable avec un jeu d'exemple ;
+- ✅ export exploitable ;
+- ✅ confidentialité et suppression visibles avant l'upload ;
+- ✅ métriques du parcours et de l'intention payante disponibles ;
+- ✅ aucun élément du périmètre B ou C requis pour publier.
 
 ## Journal des changements
 
