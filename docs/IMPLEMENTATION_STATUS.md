@@ -100,16 +100,16 @@ encore ni clients, ni fournisseurs, ni mappings sauvegardés, ni historique comm
 
 ## E. Persistance et confidentialité
 
-| Élément                               | État | Notes                                                                                                                                                            |
-| ------------------------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Session anonyme liée au navigateur    | ✅   | Jeton aléatoire haché, en session et dans un cookie chiffré HttpOnly                                                                                             |
-| Fichier brut non conservé             | ✅   | Cellules extraites persistées temporairement                                                                                                                     |
-| Rétention 24 h et purge               | ✅   | Suppression manuelle disponible                                                                                                                                  |
-| Isolation des sessions                | ✅   | Couverture Feature présente                                                                                                                                      |
-| Durée session/rétention cohérente     | ✅   | Cookie dédié valable pendant la rétention (24 h) ; date de suppression affichée à chaque étape                                                                   |
-| Compteurs sans données comptables     | ✅   | `UsageLog` présent                                                                                                                                               |
-| Funnel produit complet                | 🟡   | Intention payante mesurée (clic, questionnaire, prix affiché, email facultatif ; `php artisan supplier-reconciliation:interest`) ; retours qualitatifs à ajouter |
-| Chiffrement et isolation multi-tenant | 🔴   | Obligatoires avec le périmètre B                                                                                                                                 |
+| Élément                               | État | Notes                                                                                                                                                                                                                           |
+| ------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Session anonyme liée au navigateur    | ✅   | Jeton aléatoire haché, en session et dans un cookie chiffré HttpOnly                                                                                                                                                            |
+| Fichier brut non conservé             | ✅   | Cellules extraites persistées temporairement                                                                                                                                                                                    |
+| Rétention 24 h et purge               | ✅   | Suppression manuelle disponible                                                                                                                                                                                                 |
+| Isolation des sessions                | ✅   | Couverture Feature présente                                                                                                                                                                                                     |
+| Durée session/rétention cohérente     | ✅   | Cookie dédié valable pendant la rétention (24 h) ; date de suppression affichée à chaque étape                                                                                                                                  |
+| Compteurs sans données comptables     | ✅   | `UsageLog` présent                                                                                                                                                                                                              |
+| Funnel produit complet                | 🟡   | Intention payante (clic, questionnaire, prix, email facultatif) et demandes du périmètre C mesurées séparément (`supplier-reconciliation:interest`) ; rejets d'auto-matchs journalisés ; tableau de bord à construire si besoin |
+| Chiffrement et isolation multi-tenant | 🔴   | Obligatoires avec le périmètre B                                                                                                                                                                                                |
 
 ## F. Qualité et environnement
 
@@ -185,6 +185,7 @@ Ces chiffres doivent être remplacés par le prochain résultat complet, pas sim
 
 | Date       | Changement                                                                                                | Preuve                                                               |
 | ---------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| 2026-10-02 | Demandes du périmètre C (batch, PDF, intégration…) mesurées séparément                                    | `InterestTest` ; 297/297                                             |
 | 2026-10-02 | Colonne référence choisie par recoupement ; solde progressif validé avant usage                           | `ReferenceColumnAdvisorTest`, corpus Business Central ; 297/297      |
 | 2026-10-02 | Choix de la feuille XLSX (automatique + manuel)                                                           | `FileImporterTest`, `ReconciliationFlowTest` ; 290/290               |
 | 2026-10-02 | Export XLSX renforcé : liste « To review », synthèse avec contexte, mise en forme                         | `ResultExporterTest`                                                 |

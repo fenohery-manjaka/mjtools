@@ -56,6 +56,7 @@ class InterestTest extends TestCase
             'accounting_software' => 'other',
             'accounting_software_other' => 'Pennylane',
             'price_answer' => 'maybe',
+            'wanted_next' => ['batch', 'pdf', 'batch'],
             'email' => 'bookkeeper@example.com',
         ])->assertRedirect()->assertSessionHasNoErrors();
 
@@ -64,6 +65,7 @@ class InterestTest extends TestCase
         $this->assertSame('Pennylane', $answer->accounting_software_other);
         $this->assertSame('€29 / month', $answer->price_shown);
         $this->assertSame('bookkeeper@example.com', $answer->email);
+        $this->assertSame(['batch', 'pdf'], $answer->wanted_next);
         $this->assertArrayNotHasKey('run_id', $answer->getAttributes());
 
         Log::shouldHaveReceived('info')->with('supplier-reconciliation.save_supplier_clicked', ['run' => $run->id]);
@@ -83,8 +85,9 @@ class InterestTest extends TestCase
             'suppliers_per_month' => 'lots',
             'accounting_software' => 'xero',
             'price_answer' => 'yes',
+            'wanted_next' => ['teleportation'],
             'email' => 'not-an-email',
-        ])->assertSessionHasErrors(['suppliers_per_month', 'email']);
+        ])->assertSessionHasErrors(['suppliers_per_month', 'email', 'wanted_next.0']);
 
         $this->flushSession();
         $this->post(route('supplier-reconciliation.interest.store', $run), [
@@ -102,6 +105,7 @@ class InterestTest extends TestCase
             'suppliers_per_month' => '6-20',
             'accounting_software' => 'xero',
             'price_answer' => 'yes',
+            'wanted_next' => ['integration'],
             'price_shown' => '€29 / month',
             'email' => 'someone@example.com',
         ]);
@@ -109,6 +113,7 @@ class InterestTest extends TestCase
         $this->artisan('supplier-reconciliation:interest')
             ->expectsOutputToContain('Answers in the last 30 day(s): 1')
             ->expectsOutputToContain('With an email: 1')
+            ->expectsOutputToContain('Connect my accounting software')
             ->doesntExpectOutputToContain('someone@example.com')
             ->assertSuccessful();
     }

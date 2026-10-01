@@ -23,6 +23,7 @@ const form = useForm({
     accounting_software: '',
     accounting_software_other: '',
     price_answer: '',
+    wanted_next: [] as string[],
     email: '',
 });
 
@@ -181,6 +182,30 @@ function submit(): void {
                         </label>
                     </div>
                     <InputError :message="form.errors.price_answer" />
+                </fieldset>
+
+                <fieldset class="mt-5">
+                    <legend class="mb-2 text-sm font-medium">
+                        What else would save you time?
+                        <span class="text-muted-foreground font-normal"
+                            >(optional)</span
+                        >
+                    </legend>
+                    <div class="flex flex-wrap gap-2 text-sm">
+                        <label
+                            v-for="option in intent.wanted_next"
+                            :key="option.value"
+                            class="has-[:checked]:border-primary has-[:checked]:bg-accent has-[:focus-visible]:ring-ring/50 flex cursor-pointer items-center gap-2 rounded-md border px-3 py-1.5 has-[:focus-visible]:ring-[3px]"
+                        >
+                            <input
+                                v-model="form.wanted_next"
+                                type="checkbox"
+                                class="accent-primary"
+                                :value="option.value"
+                            />
+                            {{ option.label }}
+                        </label>
+                    </div>
                 </fieldset>
 
                 <label class="mt-5 block max-w-md text-sm">

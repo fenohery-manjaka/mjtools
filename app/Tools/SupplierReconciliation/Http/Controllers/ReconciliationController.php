@@ -101,6 +101,7 @@ class ReconciliationController extends Controller
                 'suppliers_per_month' => $this->options(InterestResponse::SUPPLIERS_PER_MONTH),
                 'accounting_software' => $this->options(InterestResponse::ACCOUNTING_SOFTWARE),
                 'price_answers' => $this->options(InterestResponse::PRICE_ANSWERS),
+                'wanted_next' => $this->options(InterestResponse::WANTED_NEXT),
             ],
         ]);
     }

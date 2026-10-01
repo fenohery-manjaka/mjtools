@@ -121,6 +121,7 @@ export type Intent = {
     suppliers_per_month: Option[];
     accounting_software: Option[];
     price_answers: Option[];
+    wanted_next: Option[];
 };
 
 export type AmountTotal = { count: number; total: string };

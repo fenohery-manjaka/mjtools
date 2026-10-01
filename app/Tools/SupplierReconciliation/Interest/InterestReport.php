@@ -36,6 +36,14 @@ class InterestReport extends Command
             );
         }
 
+        $wanted = $answers->pluck('wanted_next')->flatten()->countBy();
+
+        $this->newLine();
+        $this->table(
+            ['Asked for next (scope C)', 'Answers'],
+            array_map(fn (string $value, string $label): array => [$label, $wanted->get($value, 0)], array_keys(InterestResponse::WANTED_NEXT), InterestResponse::WANTED_NEXT),
+        );
+
         $this->newLine();
         $this->line('Prices shown: '.($answers->pluck('price_shown')->unique()->implode(', ') ?: '—'));
         $this->line('Clicks on "Save this supplier" are logged as supplier-reconciliation.save_supplier_clicked.');

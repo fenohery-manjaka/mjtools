@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $accounting_software
  * @property string|null $accounting_software_other
  * @property string $price_answer
+ * @property list<string>|null $wanted_next
  * @property string $price_shown
  * @property string|null $email
  */
@@ -45,7 +46,24 @@ class InterestResponse extends Model
         'no' => 'No',
     ];
 
+    /** Later capabilities (scope C), asked separately from the paid product (spec §49). */
+    public const WANTED_NEXT = [
+        'batch' => 'Reconcile several suppliers at once',
+        'pdf' => 'Read PDF statements',
+        'integration' => 'Connect my accounting software',
+        'email' => 'Forward statements by email',
+        'exceptions' => 'Follow open exceptions from one period to the next',
+    ];
+
     protected $table = 'supplier_reconciliation_interest';
 
     protected $guarded = [];
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return ['wanted_next' => 'array'];
+    }
 }

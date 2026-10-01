@@ -40,12 +40,15 @@ class InterestController extends Controller
             'accounting_software' => ['required', Rule::in(array_keys(InterestResponse::ACCOUNTING_SOFTWARE))],
             'accounting_software_other' => ['nullable', 'string', 'max:100'],
             'price_answer' => ['required', Rule::in(array_keys(InterestResponse::PRICE_ANSWERS))],
+            'wanted_next' => ['nullable', 'array'],
+            'wanted_next.*' => ['string', Rule::in(array_keys(InterestResponse::WANTED_NEXT))],
             'email' => ['nullable', 'email', 'max:255'],
         ]);
 
         InterestResponse::query()->create([
             ...$validated,
             'accounting_software_other' => $validated['accounting_software'] === 'other' ? ($validated['accounting_software_other'] ?? null) : null,
+            'wanted_next' => array_values(array_unique($validated['wanted_next'] ?? [])),
             'price_shown' => (string) config('supplier-reconciliation.paid_intent.price'),
         ]);
 
@@ -56,6 +59,7 @@ class InterestController extends Controller
             'suppliers_per_month' => $validated['suppliers_per_month'],
             'accounting_software' => $validated['accounting_software'],
             'price_answer' => $validated['price_answer'],
+            'wanted_next' => implode(',', $validated['wanted_next'] ?? []),
             'left_email' => ($validated['email'] ?? null) !== null,
         ]);
 
