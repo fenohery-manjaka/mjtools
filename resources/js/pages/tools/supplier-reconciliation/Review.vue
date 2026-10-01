@@ -149,6 +149,14 @@ function link(filter: string, pageNumber = 1) {
         >
             <CircleCheck class="text-success size-6" />
             Nothing to show here.
+            <Link
+                v-if="filter !== 'all' && attentionCount > 0"
+                :href="link('all')"
+                class="text-primary text-sm font-medium underline-offset-4 hover:underline"
+            >
+                See the {{ attentionCount }} remaining
+                {{ attentionCount === 1 ? 'item' : 'items' }}
+            </Link>
         </div>
     </div>
 

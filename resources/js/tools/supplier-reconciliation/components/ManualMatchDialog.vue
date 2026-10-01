@@ -126,7 +126,7 @@ function match(option: Transaction): void {
                     :key="option.id"
                     class="hover:bg-accent/50 flex items-center justify-between gap-3 rounded-md border p-2.5 text-sm"
                 >
-                    <div class="min-w-0">
+                    <div class="min-w-0 flex-1">
                         <p class="figure truncate font-medium">
                             {{ option.reference ?? '(no reference)' }}
                         </p>
@@ -142,7 +142,7 @@ function match(option: Transaction): void {
                             >
                         </p>
                     </div>
-                    <span class="figure font-medium">{{
+                    <span class="figure w-28 shrink-0 text-right font-medium">{{
                         option.amount_normalized ?? '—'
                     }}</span>
                     <Button size="sm" @click="match(option)">Match</Button>
