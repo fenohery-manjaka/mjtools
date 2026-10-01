@@ -23,6 +23,9 @@ final class ColumnDetector
         'amount' => '/\b(amount|montant|total|gross|value|valeur|net|sum|ttc|importe|betrag)\b/iu',
         'debit' => '/^\s*(debit|débit|dr|debit amount|debits)\s*$/iu',
         'credit' => '/^\s*(credit|crédit|cr|credit amount|credits)\s*$/iu',
+        // Statement layouts that split amounts into what is charged and what is paid.
+        'charges' => '/^\s*(charges?|invoiced|invoices|billed|amount charged|factur[ée]s?)\s*$/iu',
+        'payments' => '/^\s*(payments?|paid|receipts?|payments received|credits received|règlements?|paiements?)\s*$/iu',
         'balance' => '/\b(balance|solde|running|cumul|outstanding)\b/iu',
         'reference' => '/\b(ref|reference|référence|invoice|inv|document|doc|no|nº|n°|number|num|numéro|facture|pièce|piece|voucher|external)\b/iu',
         'type' => '/\b(type|nature|kind|doc(ument)? type|transaction type|trans type)\b/iu',
@@ -88,8 +91,8 @@ final class ColumnDetector
             default => 0.0,
         });
 
-        $pick(Field::Debit->value, fn (ColumnProfile $s): float => $matches('debit', $s->header) && $s->amountRatio >= 0.8 ? 1.0 : 0.0);
-        $pick(Field::Credit->value, fn (ColumnProfile $s): float => $matches('credit', $s->header) && $s->amountRatio >= 0.8 ? 1.0 : 0.0);
+        $pick(Field::Debit->value, fn (ColumnProfile $s): float => ($matches('debit', $s->header) || $matches('charges', $s->header)) && $s->amountRatio >= 0.8 ? 1.0 : 0.0);
+        $pick(Field::Credit->value, fn (ColumnProfile $s): float => ($matches('credit', $s->header) || $matches('payments', $s->header)) && $s->amountRatio >= 0.8 ? 1.0 : 0.0);
 
         $pick(Field::Amount->value, fn (ColumnProfile $s): float => match (true) {
             $matches('balance', $s->header) => 0.0,
@@ -99,6 +102,8 @@ final class ColumnDetector
         });
 
         $pick(Field::Type->value, fn (ColumnProfile $s): float => $matches('type', $s->header) && ! $matches('date', $s->header) ? 1.0 : 0.0);
+
+        $pick(Field::Balance->value, fn (ColumnProfile $s): float => $matches('balance', $s->header) && $s->amountRatio >= 0.6 ? 1.0 : 0.0);
 
         $pick(Field::Currency->value, fn (ColumnProfile $s): float => $matches('currency', $s->header) || $this->currencyCodeRatio($s) >= 0.8 ? 1.0 : 0.0);
 
@@ -144,10 +149,28 @@ final class ColumnDetector
             columns: $columns,
             amountMode: $amountMode,
             invoiceSign: $amountMode === AmountMode::Signed ? $this->suggestInvoiceSign($table, $mapping) : ColumnMapping::INVOICES_POSITIVE,
-            invoiceColumn: $side === Side::Ledger ? ColumnMapping::INVOICES_IN_CREDIT : ColumnMapping::INVOICES_IN_DEBIT,
+            invoiceColumn: $this->suggestInvoiceColumn($table, $columns, $side, $matches),
             dateOrder: $dateOrder,
             decimalSeparator: $separator,
         );
+    }
+
+    /**
+     * A "Charges" column holds invoices whatever the file. Otherwise invoices
+     * are usually debits on a supplier statement and credits in an AP ledger.
+     *
+     * @param  array<string, int>  $columns
+     * @param  callable(string, string): bool  $matches
+     */
+    private function suggestInvoiceColumn(ImportedTable $table, array $columns, Side $side, callable $matches): string
+    {
+        $debit = $columns[Field::Debit->value] ?? null;
+
+        if ($debit !== null && $matches('charges', $table->headers[$debit] ?? '')) {
+            return ColumnMapping::INVOICES_IN_DEBIT;
+        }
+
+        return $side === Side::Ledger ? ColumnMapping::INVOICES_IN_CREDIT : ColumnMapping::INVOICES_IN_DEBIT;
     }
 
     /**

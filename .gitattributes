@@ -9,3 +9,6 @@
 CHANGELOG.md export-ignore
 README.md export-ignore
 .github/workflows/browser-tests.yml export-ignore
+
+# Corpus files are kept byte for byte (encodings, line endings are part of the test).
+tests/Fixtures/SupplierReconciliation/corpus/** -text

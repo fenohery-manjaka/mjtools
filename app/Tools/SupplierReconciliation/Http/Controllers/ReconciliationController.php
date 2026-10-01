@@ -94,7 +94,7 @@ class ReconciliationController extends Controller
         return Inertia::render('tools/supplier-reconciliation/Summary', [
             'run' => $this->presenter->run($run),
             'summary' => $reviewed->summary(),
-            'balance' => $statement === null ? null : (new BalanceCheck)->check($statement->built->transactions),
+            'balance' => $statement === null ? null : (new BalanceCheck)->check($statement->built->transactions, $statement->built->runningBalances),
             'intent' => [
                 'sent' => (bool) $request->session()->get(InterestController::SESSION_KEY, false),
                 'price' => (string) config('supplier-reconciliation.paid_intent.price'),

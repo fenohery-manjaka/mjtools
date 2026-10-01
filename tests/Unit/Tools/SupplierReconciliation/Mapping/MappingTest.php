@@ -146,6 +146,48 @@ class MappingTest extends TestCase
         $this->assertNull($built->transactions[1]->amount);
     }
 
+    public function test_charges_and_payments_columns_are_read_as_debit_and_credit(): void
+    {
+        $table = $this->table("Date,Invoice #,Description,Charges,Payments,Balance\n09/03/2026,10457,Paper,\"$1,240.00\",,\"$1,240.00\"\n09/08/2026,,Payment,,\"$1,000.00\",$240.00\n");
+
+        foreach ([Side::Statement, Side::Ledger] as $side) {
+            $mapping = (new ColumnDetector)->suggest($table, $side, 0);
+
+            $this->assertSame(AmountMode::DebitCredit, $mapping->amountMode);
+            $this->assertSame(3, $mapping->column(Field::Debit));
+            $this->assertSame(4, $mapping->column(Field::Credit));
+            $this->assertSame(5, $mapping->column(Field::Balance));
+            // Charges are invoices whatever the file.
+            $this->assertSame(ColumnMapping::INVOICES_IN_DEBIT, $mapping->invoiceColumn);
+        }
+    }
+
+    public function test_group_totals_are_set_aside_only_without_reference_or_date(): void
+    {
+        $table = $this->table(",Date,Num,Memo,Amount\nACME Ltd,,,,\n,03/09/2026,10457,Paper,100.00\nTotal for ACME Ltd,,,,100.00\n,04/09/2026,10460,Total for project Alpha,50.00\n");
+        $mapping = new ColumnMapping(0, ['date' => 1, 'reference' => 2, 'description' => 3, 'amount' => 4]);
+
+        $built = (new TransactionBuilder)->build($table, $mapping, Side::Ledger);
+
+        $this->assertCount(3, $built->transactions);
+        $this->assertTrue($built->transactions[1]->isBalanceLine);
+        // A document whose description starts like a total is never hidden.
+        $this->assertFalse($built->transactions[2]->isBalanceLine);
+    }
+
+    public function test_balance_wording_keeps_a_line_without_amount_or_date(): void
+    {
+        $table = $this->table("Date,Ref,Description,Amount,Balance\n01/09/2026,INV-1,Bricks,100.00,100.00\n,,Amount Due,,100.00\n,,Thank you,,\n");
+        $mapping = new ColumnMapping(0, ['date' => 0, 'reference' => 1, 'description' => 2, 'amount' => 3, 'balance' => 4]);
+
+        $built = (new TransactionBuilder)->build($table, $mapping, Side::Statement);
+
+        $this->assertCount(2, $built->transactions);
+        $this->assertTrue($built->transactions[1]->isBalanceLine);
+        $this->assertSame(1, $built->ignoredTextRows);
+        $this->assertSame('100.00', $built->runningBalances[3]->toDecimal());
+    }
+
     public function test_builder_reports_unreadable_values(): void
     {
         $table = $this->table("Ref,Date,Amount\nINV-1,31/02/2026,abc\n");

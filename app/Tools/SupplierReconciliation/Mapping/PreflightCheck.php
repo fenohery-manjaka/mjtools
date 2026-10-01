@@ -46,7 +46,7 @@ final class PreflightCheck
         }
 
         // Optional and informative: an inconsistent balance never blocks the reconciliation.
-        $balance = $this->balance->check($statement->built->transactions);
+        $balance = $this->balance->check($statement->built->transactions, $statement->built->runningBalances);
 
         if ($balance['status'] === BalanceCheck::INCONSISTENT) {
             $warnings[] = $balance['message'];

@@ -41,6 +41,7 @@ final class TransactionBuilder
         $ignored = 0;
         /** @var array<string, array{mark: CurrencyMark, lines: int}> $currencyLines */
         $currencyLines = [];
+        $runningBalances = [];
 
         foreach ($table->rows as $row) {
             $original = $this->originalValues($row['cells'], $mapping);
@@ -49,7 +50,9 @@ final class TransactionBuilder
                 continue;
             }
 
-            if ($this->isFreeText($original, $mapping)) {
+            $isBalanceLine = $this->isBalanceLine($original, $row['cells']);
+
+            if (! $isBalanceLine && $this->isFreeText($original, $mapping)) {
                 $ignored++;
 
                 continue;
@@ -67,6 +70,7 @@ final class TransactionBuilder
                 rowNumber: $row['number'],
                 original: $original,
                 mapping: $mapping,
+                isBalanceLine: $isBalanceLine,
             );
 
             if ($transaction->issues !== []) {
@@ -74,6 +78,12 @@ final class TransactionBuilder
             }
 
             $transactions[] = $transaction;
+
+            $balance = $this->runningBalance($original, $mapping);
+
+            if ($balance !== null) {
+                $runningBalances[$row['number']] = $balance;
+            }
 
             $mark = $this->lineCurrency($original);
 
@@ -89,13 +99,14 @@ final class TransactionBuilder
             $filteredOut,
             $ignored,
             new CurrencyEvidence($currencyLines, $this->headerCurrency($table, $mapping)),
+            $runningBalances,
         );
     }
 
     /**
      * @param  array<string, string>  $original
      */
-    private function transaction(string $id, Side $side, int $rowNumber, array $original, ColumnMapping $mapping): Transaction
+    private function transaction(string $id, Side $side, int $rowNumber, array $original, ColumnMapping $mapping, bool $isBalanceLine): Transaction
     {
         $issues = [];
         $notes = [];
@@ -138,12 +149,53 @@ final class TransactionBuilder
             documentType: $this->types->classify($typeText, $reference, $amount),
             issues: $issues,
             amountNotes: $notes,
-            isBalanceLine: $this->balanceLines->isBalanceLine([
-                $original[Field::Reference->value] ?? null,
-                $typeText,
-                $original[Field::Description->value] ?? null,
-            ]),
+            isBalanceLine: $isBalanceLine,
         );
+    }
+
+    /**
+     * Running balance of a line, with the file's sign convention applied so
+     * that it reads from the supplier statement's point of view.
+     *
+     * @param  array<string, string>  $original
+     */
+    private function runningBalance(array $original, ColumnMapping $mapping): ?Amount
+    {
+        $balance = $this->amounts->parse($original[Field::Balance->value] ?? null, $mapping->decimalSeparator)->amount;
+
+        $inverted = $mapping->amountMode === AmountMode::Signed
+            ? $mapping->invoiceSign === ColumnMapping::INVOICES_NEGATIVE
+            : $mapping->invoiceColumn === ColumnMapping::INVOICES_IN_CREDIT;
+
+        return $inverted ? $balance?->negate() : $balance;
+    }
+
+    /**
+     * Balances and totals are recognised by explicit wording only. Group
+     * totals ("Total for ACME Ltd") are also searched in unmapped cells, but
+     * only on lines without reference or date, where they cannot hide a
+     * document.
+     *
+     * @param  array<string, string>  $original
+     * @param  list<string>  $cells
+     */
+    private function isBalanceLine(array $original, array $cells): bool
+    {
+        $texts = [
+            $original[Field::Reference->value] ?? null,
+            $original[Field::Type->value] ?? null,
+            $original[Field::Description->value] ?? null,
+        ];
+
+        if ($this->balanceLines->isBalanceLine($texts)) {
+            return true;
+        }
+
+        if (isset($original[Field::Reference->value]) || isset($original[Field::Date->value])) {
+            return false;
+        }
+
+        return $this->balanceLines->isGroupTotal([...$texts, ...$cells]);
     }
 
     /**

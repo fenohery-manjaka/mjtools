@@ -21,6 +21,27 @@ final class BalanceLineDetector
     )\s*[:.]?\s*$/xiu';
 
     /**
+     * Group totals of accounting exports ("Total for ACME Ltd", "Total pour
+     * BRICOMAT"). Only trusted on lines without reference or date, where they
+     * cannot hide a document.
+     */
+    private const GROUP_TOTAL = '/^\s*(total|sous-total|subtotal)\s+(for|pour|de|du)\s+\S.*$/iu';
+
+    /**
+     * @param  list<?string>  $texts
+     */
+    public function isGroupTotal(array $texts): bool
+    {
+        foreach ($texts as $text) {
+            if ($text !== null && preg_match(self::GROUP_TOTAL, $text) === 1) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * @param  list<?string>  $texts  Reference, type and description values of the row.
      */
     public function isBalanceLine(array $texts): bool

@@ -1,0 +1,36 @@
+{
+    "description": "French building supplier: Windows-1252 CSV with semicolons, title lines, debit/credit/balance columns and comma decimals, against a Sage-like XLSX supplier ledger with title rows, real dates and references written differently.",
+    "currency": "EUR",
+    "balance": "verified",
+    "pairs": [
+        [[8], [4]],
+        [[9], [5]],
+        [[10], [6]],
+        [[11], [7]],
+        [[13], [8]],
+        [[15], [9]],
+        [[16], [10]]
+    ],
+    "expect": {
+        "statement": {
+            "7": "excluded",
+            "8": "matched",
+            "9": "matched",
+            "10": "matched",
+            "11": "amount_mismatch",
+            "12": "missing_in_ledger",
+            "13": "matched",
+            "14": "missing_in_ledger",
+            "15": "possible_match",
+            "16": "matched",
+            "18": "excluded"
+        },
+        "ledger": {
+            "12": "ledger_only"
+        }
+    },
+    "notes": {
+        "statement 17 / ledger 11": "Two different invoices (FA-26-0475 and FA-26-0481) with the same amount one day apart: may be proposed, never matched automatically.",
+        "statement 15 / ledger 9": "Same document written 0460 in the ledger: only a possible match."
+    }
+}
