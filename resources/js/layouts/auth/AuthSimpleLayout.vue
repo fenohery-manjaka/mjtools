@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import AppLogoIcon from '@/components/AppLogoIcon.vue';
+import BrandMark from '@/components/BrandMark.vue';
 import { home } from '@/routes';
 
 defineProps<{
@@ -20,15 +20,15 @@ defineProps<{
                         :href="home()"
                         class="flex flex-col items-center gap-2 font-medium"
                     >
-                        <div
-                            class="mb-1 flex h-9 w-9 items-center justify-center rounded-md"
-                        >
-                            <AppLogoIcon class="text-foreground size-9" />
-                        </div>
+                        <BrandMark class="mb-2" />
                         <span class="sr-only">{{ title }}</span>
                     </Link>
                     <div class="space-y-2 text-center">
-                        <h1 class="text-xl font-medium">{{ title }}</h1>
+                        <h1
+                            class="font-display text-2xl font-semibold tracking-tight"
+                        >
+                            {{ title }}
+                        </h1>
                         <p class="text-muted-foreground text-center text-sm">
                             {{ description }}
                         </p>

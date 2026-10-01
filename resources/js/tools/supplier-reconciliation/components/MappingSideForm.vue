@@ -32,6 +32,21 @@ const visibleFields = computed(() =>
 
 const required = ['reference', 'amount', 'debit', 'credit'];
 
+// The columns every reconciliation needs first, the optional ones apart.
+const main = ['reference', 'date', 'amount', 'debit', 'credit'];
+const groups = computed(() => [
+    {
+        title: 'Main columns',
+        fields: visibleFields.value.filter((field) => main.includes(field.key)),
+    },
+    {
+        title: 'Optional columns',
+        fields: visibleFields.value.filter(
+            (field) => !main.includes(field.key),
+        ),
+    },
+]);
+
 function samples(column: number | null | undefined): string[] {
     return column === null || column === undefined
         ? []
@@ -110,53 +125,60 @@ function changeHeader(event: Event): void {
             </div>
         </fieldset>
 
-        <div class="grid gap-4 sm:grid-cols-2">
-            <label
-                v-for="field in visibleFields"
-                :key="field.key"
-                class="block text-sm"
+        <template v-for="group in groups" :key="group.title">
+            <p
+                class="text-muted-foreground mt-6 mb-3 border-t pt-5 text-xs font-medium tracking-[0.14em] uppercase first-of-type:mt-0 first-of-type:border-t-0 first-of-type:pt-0"
             >
-                <span class="mb-1 block font-medium">
-                    {{ field.label }}
+                {{ group.title }}
+            </p>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <label
+                    v-for="field in group.fields"
+                    :key="field.key"
+                    class="block text-sm"
+                >
+                    <span class="mb-1 block font-medium">
+                        {{ field.label }}
+                        <span
+                            v-if="required.includes(field.key)"
+                            class="text-danger"
+                            title="Required"
+                            >*</span
+                        >
+                    </span>
+                    <select
+                        v-model="mapping.columns[field.key]"
+                        :class="selectClass"
+                    >
+                        <option :value="null">— Not used —</option>
+                        <option
+                            v-for="column in data.columns"
+                            :key="column.index"
+                            :value="column.index"
+                        >
+                            {{ column.letter }} · {{ column.name }}
+                        </option>
+                    </select>
+                    <span class="text-muted-foreground mt-1 block text-xs">
+                        {{ field.help }}
+                    </span>
                     <span
-                        v-if="required.includes(field.key)"
-                        class="text-danger"
-                        title="Required"
-                        >*</span
+                        v-if="samples(mapping.columns[field.key]).length"
+                        class="mt-1 flex flex-wrap gap-1"
                     >
-                </span>
-                <select
-                    v-model="mapping.columns[field.key]"
-                    :class="selectClass"
-                >
-                    <option :value="null">— Not used —</option>
-                    <option
-                        v-for="column in data.columns"
-                        :key="column.index"
-                        :value="column.index"
-                    >
-                        {{ column.letter }} · {{ column.name }}
-                    </option>
-                </select>
-                <span class="text-muted-foreground mt-1 block text-xs">
-                    {{ field.help }}
-                </span>
-                <span
-                    v-if="samples(mapping.columns[field.key]).length"
-                    class="mt-1 flex flex-wrap gap-1"
-                >
-                    <code
-                        v-for="(sample, index) in samples(
-                            mapping.columns[field.key],
-                        )"
-                        :key="index"
-                        class="bg-muted border-rule max-w-full truncate rounded border px-1.5 py-0.5 text-xs"
-                        >{{ sample }}</code
-                    >
-                </span>
-                <InputError :message="error(`columns.${field.key}`)" />
-            </label>
-        </div>
+                        <code
+                            v-for="(sample, index) in samples(
+                                mapping.columns[field.key],
+                            )"
+                            :key="index"
+                            class="bg-muted border-rule max-w-full truncate rounded border px-1.5 py-0.5 text-xs"
+                            >{{ sample }}</code
+                        >
+                    </span>
+                    <InputError :message="error(`columns.${field.key}`)" />
+                </label>
+            </div>
+        </template>
 
         <p
             class="text-muted-foreground mt-6 border-t pt-5 text-xs font-medium tracking-[0.14em] uppercase"
