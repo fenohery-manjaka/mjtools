@@ -62,7 +62,7 @@ encore ni clients, ni fournisseurs, ni mappings sauvegardés, ni historique comm
 | Choix de feuille XLSX                           | 🔴   | Première feuille non vide uniquement                                                                                                                                |
 | Référence secondaire                            | 🔴   | Une seule colonne actuellement                                                                                                                                      |
 | Devise unique et garde-fous                     | ✅   | Détectée (codes, symboles, en-tête, colonne Currency), confirmée à l'étape Columns ; toute autre devise bloque ; jamais de conversion ; colonne Currency à l'export |
-| Contrôle facultatif du solde                    | 🔴   | Priorité A2                                                                                                                                                         |
+| Contrôle facultatif du solde                    | ✅   | Relevé : solde d'ouverture + lignes = solde de clôture → vérifié / incohérent (écart affiché, avertissement non bloquant) / indisponible ; `BalanceCheckTest`       |
 | PDF texte / OCR                                 | ⏸️   | Périmètre C après validation                                                                                                                                        |
 
 ## C. Moteur de rapprochement
@@ -185,6 +185,7 @@ Ces chiffres doivent être remplacés par le prochain résultat complet, pas sim
 
 | Date       | Changement                                                         | Preuve                                                               |
 | ---------- | ------------------------------------------------------------------ | -------------------------------------------------------------------- |
+| 2026-10-02 | Contrôle facultatif du solde du relevé (check + synthèse)          | `BalanceCheckTest`, `SampleRunTest` ; 256/256                        |
 | 2026-10-02 | Devise unique par rapprochement (détection, confirmation, blocage) | `CurrencyCheckTest`, `CurrencyDetectorTest`, tests Feature ; 251/251 |
 | 2026-10-01 | Design system mjtools, refonte de l'accueil et du parcours         | Vérification navigateur clair/sombre/mobile, vp check, vue-tsc       |
 | 2026-10-01 | Jeu d'exemple en un clic + correction pied de page texte           | `SampleRunTest`, `MappingTest`                                       |

@@ -135,6 +135,11 @@ Fichier ─► Import (RawTable) ─► détection en-têtes + mapping proposé 
   tout le rapprochement (`supplier_reconciliation_runs.currency`). Le contrôle avant analyse bloque
   si elle n'est pas confirmée ou si une ligne ou un fichier indique une autre devise. Aucune
   conversion.
+- **Contrôle du solde** (A2, facultatif) : `BalanceCheck` additionne les lignes du relevé entre
+  la ligne de solde précédant la première transaction (zéro sinon) et la dernière ligne de solde
+  suivant la dernière transaction. Résultat : vérifié, incohérent (écart affiché, simple
+  avertissement) ou indisponible (pas de solde de clôture, montant illisible). Jamais bloquant.
+  Le rapprochement des soldes relevé/ledger reste une évolution possible.
 - Contrôle avant analyse : lignes par fichier, champs ✓, lignes illisibles, conventions
   appliquées, **suggestion d'inversion de signe** si les références communes ont
   majoritairement des signes opposés. Bloquant si champs requis absents ou trop de lignes
