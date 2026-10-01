@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useForm } from '@inertiajs/vue3';
-import { Upload } from '@lucide/vue';
+import { LoaderCircle, Upload } from '@lucide/vue';
 import { ref } from 'vue';
 import InputError from '@/components/InputError.vue';
 import { store } from '@/routes/supplier-reconciliation/files';
@@ -47,30 +47,46 @@ function onChange(event: Event): void {
 <template>
     <div>
         <label
-            class="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-4 py-8 text-center transition-colors"
+            class="focus-within:ring-ring/50 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-4 py-10 text-center transition-colors focus-within:ring-[3px]"
             :class="
                 dragging
-                    ? 'border-primary bg-primary/5'
-                    : 'hover:border-primary/60 border-muted-foreground/25'
+                    ? 'border-primary bg-accent'
+                    : 'border-foreground/15 hover:border-primary/50 hover:bg-accent/50'
             "
             @dragover.prevent="dragging = true"
             @dragleave.prevent="dragging = false"
             @drop.prevent="onDrop"
         >
-            <Upload class="text-muted-foreground size-6" />
-            <span class="text-sm font-medium">
+            <span
+                class="bg-accent text-primary flex size-11 items-center justify-center rounded-full"
+            >
+                <LoaderCircle
+                    v-if="form.processing"
+                    class="size-5 animate-spin"
+                />
+                <Upload v-else class="size-5" />
+            </span>
+            <span class="mt-1 text-sm font-medium">
                 <template v-if="form.processing">Reading the file…</template>
-                <template v-else>Drop a file here or click to choose</template>
+                <template v-else
+                    >Drop a file here or
+                    <span class="text-primary underline underline-offset-4"
+                        >choose one</span
+                    ></template
+                >
             </span>
             <span class="text-muted-foreground text-xs">
                 CSV or XLSX, up to {{ maxFileMb }} MB
             </span>
-            <progress
+            <span
                 v-if="form.progress"
-                :value="form.progress.percentage"
-                max="100"
-                class="w-40"
-            />
+                class="bg-muted mt-1 h-1.5 w-40 overflow-hidden rounded-full"
+            >
+                <span
+                    class="bg-primary block h-full transition-[width]"
+                    :style="{ width: `${form.progress.percentage ?? 0}%` }"
+                />
+            </span>
             <input
                 ref="input"
                 type="file"

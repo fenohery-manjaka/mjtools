@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3';
+import { ArrowLeftRight } from '@lucide/vue';
 import { computed } from 'vue';
 import { Button } from '@/components/ui/button';
 import { destroy, store } from '@/routes/supplier-reconciliation/decisions';
+import { edgeClasses, toneOf } from '../tones';
 import type { Candidate, ReviewItem, Transaction } from '../types';
 import ComparisonTable from './ComparisonTable.vue';
 import ReasonList from './ReasonList.vue';
@@ -82,13 +84,20 @@ function label(id: string): string {
 </script>
 
 <template>
-    <article class="bg-background rounded-xl border p-5">
-        <header class="flex flex-wrap items-start justify-between gap-2">
-            <div class="flex flex-wrap items-center gap-2">
-                <StatusBadge :status="item.status" :label="item.status_label" />
-                <h3 class="font-medium">{{ item.headline }}</h3>
+    <article
+        class="bg-card rounded-xl border border-l-4 p-5 shadow-xs sm:p-6"
+        :class="edgeClasses[toneOf(item.status)]"
+    >
+        <header class="flex flex-wrap items-start justify-between gap-3">
+            <div class="flex min-w-0 flex-col gap-2">
+                <StatusBadge
+                    class="self-start"
+                    :status="item.status"
+                    :label="item.status_label"
+                />
+                <h3 class="font-semibold">{{ item.headline }}</h3>
             </div>
-            <div class="text-muted-foreground text-right text-xs">
+            <div class="text-muted-foreground space-y-0.5 text-right text-xs">
                 <p v-if="item.confidence && item.needs_attention">
                     Engine: {{ item.confidence }}
                 </p>
@@ -101,10 +110,10 @@ function label(id: string): string {
             </div>
         </header>
 
-        <div class="mt-4 grid gap-4 md:grid-cols-2">
+        <div class="mt-5 grid gap-4 md:grid-cols-[1fr_auto_1fr] md:items-start">
             <div>
                 <p
-                    class="text-muted-foreground mb-2 text-xs font-medium uppercase"
+                    class="text-muted-foreground mb-2 text-xs font-medium tracking-[0.14em] uppercase"
                 >
                     Supplier statement
                 </p>
@@ -116,15 +125,19 @@ function label(id: string): string {
                     />
                     <p
                         v-if="!item.statement.length"
-                        class="text-muted-foreground text-sm italic"
+                        class="text-muted-foreground border-foreground/15 rounded-md border border-dashed p-3 text-sm italic"
                     >
                         Nothing on the statement
                     </p>
                 </div>
             </div>
+            <ArrowLeftRight
+                class="text-muted-foreground mt-9 hidden size-4 md:block"
+                aria-hidden="true"
+            />
             <div>
                 <p
-                    class="text-muted-foreground mb-2 text-xs font-medium uppercase"
+                    class="text-muted-foreground mb-2 text-xs font-medium tracking-[0.14em] uppercase"
                 >
                     Ledger
                 </p>
@@ -136,7 +149,7 @@ function label(id: string): string {
                     />
                     <p
                         v-if="!item.ledger.length"
-                        class="text-muted-foreground text-sm italic"
+                        class="text-muted-foreground border-foreground/15 rounded-md border border-dashed p-3 text-sm italic"
                     >
                         Nothing in the ledger
                     </p>
@@ -146,14 +159,14 @@ function label(id: string): string {
 
         <p
             v-if="item.difference && item.status === 'amount_mismatch'"
-            class="mt-4 rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-900 dark:bg-rose-950 dark:text-rose-200"
+            class="bg-danger-soft text-danger-strong mt-4 flex flex-wrap items-baseline justify-between gap-2 rounded-md px-3.5 py-2.5 text-sm"
         >
-            Difference (statement − ledger):
-            <strong class="tabular-nums">{{ item.difference }}</strong>
+            Difference (statement − ledger)
+            <strong class="figure text-base">{{ item.difference }}</strong>
         </p>
 
-        <div class="mt-4">
-            <p class="mb-2 text-sm font-medium">
+        <div class="bg-muted/45 mt-5 rounded-lg p-4">
+            <p class="mb-2.5 text-sm font-semibold">
                 {{
                     linked
                         ? 'Why we linked these'
@@ -168,17 +181,17 @@ function label(id: string): string {
             <ReasonList :reasons="item.reasons" />
         </div>
 
-        <div v-if="choosing" class="mt-4 space-y-3">
-            <p class="text-sm font-medium">Candidates</p>
+        <div v-if="choosing" class="mt-5 space-y-3">
+            <p class="text-sm font-semibold">Candidates</p>
             <div
                 v-for="(candidate, index) in item.candidates"
                 :key="index"
-                class="rounded-md border p-3"
+                class="rounded-lg border p-4"
             >
                 <div
-                    class="mb-2 flex flex-wrap items-center justify-between gap-2 text-sm"
+                    class="mb-3 flex flex-wrap items-center justify-between gap-2 text-sm"
                 >
-                    <span>
+                    <span class="figure">
                         {{ candidate.statement_ids.map(label).join(' + ') }}
                         ↔
                         {{ candidate.ledger_ids.map(label).join(' + ') }}
@@ -197,7 +210,7 @@ function label(id: string): string {
 
         <footer
             v-if="item.actions.length"
-            class="mt-5 flex flex-wrap gap-2 border-t pt-4"
+            class="mt-5 flex flex-wrap items-center gap-2 border-t pt-4"
         >
             <Button
                 v-if="item.actions.includes('confirm')"

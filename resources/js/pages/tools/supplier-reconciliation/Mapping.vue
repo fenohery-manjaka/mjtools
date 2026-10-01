@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
-import { ArrowRight } from '@lucide/vue';
+import { ArrowRight, TriangleAlert } from '@lucide/vue';
 import { Button } from '@/components/ui/button';
 import { update } from '@/routes/supplier-reconciliation/mapping';
 import MappingSideForm from '@/tools/supplier-reconciliation/components/MappingSideForm.vue';
+import PageHeading from '@/tools/supplier-reconciliation/components/PageHeading.vue';
 import StepNav from '@/tools/supplier-reconciliation/components/StepNav.vue';
 import type {
     MappingSide,
@@ -38,25 +39,25 @@ function submit(): void {
 </script>
 
 <template>
-    <Head title="Mapping — Supplier reconciliation" />
+    <Head title="Columns — Supplier Statement Checker" />
 
     <StepNav :run="run" current="mapping" />
 
-    <h1 class="text-2xl font-semibold tracking-tight">Check the columns</h1>
-    <p class="text-muted-foreground mt-1">
+    <PageHeading title="Check the columns">
         We detected the columns below. Correct anything that is wrong: the
         original values are never modified, these settings only tell us how to
         read them.
-    </p>
+    </PageHeading>
     <p
         v-if="run.reconciled"
-        class="mt-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
+        class="bg-warning-soft text-warning-strong border-warning/40 mt-5 flex items-start gap-2 rounded-lg border px-3.5 py-2.5 text-sm"
     >
+        <TriangleAlert class="mt-0.5 size-4 shrink-0" />
         Changing the mapping will discard the current results and your decisions
         on them.
     </p>
 
-    <form class="mt-6" @submit.prevent="submit">
+    <form class="mt-8" @submit.prevent="submit">
         <div class="grid gap-6 lg:grid-cols-2">
             <MappingSideForm
                 v-model="form.statement"
@@ -72,7 +73,7 @@ function submit(): void {
             />
         </div>
 
-        <div class="mt-8 flex justify-end">
+        <div class="mt-8 flex justify-end border-t pt-6">
             <Button type="submit" size="lg" :disabled="form.processing">
                 Save and check
                 <ArrowRight />

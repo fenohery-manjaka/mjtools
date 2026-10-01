@@ -2,7 +2,12 @@
 import { Link } from '@inertiajs/vue3';
 import { Check } from '@lucide/vue';
 import { computed } from 'vue';
-import { check, review, summary } from '@/routes/supplier-reconciliation';
+import {
+    check,
+    index,
+    review,
+    summary,
+} from '@/routes/supplier-reconciliation';
 import { edit as filesEdit } from '@/routes/supplier-reconciliation/files';
 import { edit as mappingEdit } from '@/routes/supplier-reconciliation/mapping';
 import type { Run } from '../types';
@@ -23,7 +28,7 @@ const steps = computed(() => {
         },
         {
             key: 'mapping',
-            label: 'Mapping',
+            label: 'Columns',
             href: mappingEdit(props.run.id),
             enabled: files,
         },
@@ -54,39 +59,82 @@ const currentIndex = computed(() =>
 </script>
 
 <template>
-    <nav aria-label="Reconciliation steps" class="mb-8">
-        <ol class="flex flex-wrap items-center gap-2 text-sm">
-            <li
-                v-for="(step, index) in steps"
-                :key="step.key"
-                class="flex items-center gap-2"
+    <div class="mb-8 sm:mb-10">
+        <Link
+            :href="index()"
+            class="text-muted-foreground hover:text-foreground text-xs font-medium tracking-[0.16em] uppercase"
+        >
+            Supplier Statement Checker
+        </Link>
+        <nav aria-label="Reconciliation steps" class="mt-3 overflow-x-auto">
+            <ol
+                class="flex min-w-max items-center gap-1 text-sm sm:min-w-0 sm:gap-2"
             >
-                <component
-                    :is="step.enabled && step.key !== current ? Link : 'span'"
-                    :href="step.enabled ? step.href : undefined"
-                    :aria-current="step.key === current ? 'step' : undefined"
-                    class="flex items-center gap-2 rounded-full px-3 py-1"
-                    :class="[
-                        step.key === current
-                            ? 'bg-primary text-primary-foreground'
-                            : step.enabled
-                              ? 'bg-background hover:bg-accent border'
-                              : 'text-muted-foreground border border-dashed',
-                    ]"
+                <li
+                    v-for="(step, stepIndex) in steps"
+                    :key="step.key"
+                    class="flex items-center gap-1 sm:flex-1 sm:gap-2 sm:last:flex-none"
                 >
-                    <Check v-if="index < currentIndex" class="size-3.5" />
-                    <span v-else class="text-xs opacity-70">{{
-                        index + 1
-                    }}</span>
-                    {{ step.label }}
-                </component>
-                <span
-                    v-if="index < steps.length - 1"
-                    class="text-muted-foreground"
-                    aria-hidden="true"
-                    >→</span
-                >
-            </li>
-        </ol>
-    </nav>
+                    <component
+                        :is="
+                            step.enabled && step.key !== current ? Link : 'span'
+                        "
+                        :href="step.enabled ? step.href : undefined"
+                        :aria-current="
+                            step.key === current ? 'step' : undefined
+                        "
+                        class="group flex items-center gap-2 rounded-md py-1 pr-1"
+                        :class="
+                            step.key === current
+                                ? 'text-foreground font-semibold'
+                                : step.enabled
+                                  ? 'text-foreground/80 hover:text-foreground'
+                                  : 'text-muted-foreground/70'
+                        "
+                    >
+                        <span
+                            class="figure flex size-7 shrink-0 items-center justify-center rounded-full text-xs transition-colors"
+                            :class="
+                                step.key === current
+                                    ? 'bg-primary text-primary-foreground shadow-xs'
+                                    : stepIndex < currentIndex && step.enabled
+                                      ? 'bg-success-soft text-success-strong'
+                                      : step.enabled
+                                        ? 'bg-card group-hover:border-foreground/40 border'
+                                        : 'border border-dashed'
+                            "
+                        >
+                            <Check
+                                v-if="
+                                    stepIndex < currentIndex &&
+                                    step.enabled &&
+                                    step.key !== current
+                                "
+                                class="size-3.5"
+                            />
+                            <template v-else>{{ stepIndex + 1 }}</template>
+                        </span>
+                        <span
+                            :class="
+                                step.key === current
+                                    ? ''
+                                    : 'sr-only sm:not-sr-only'
+                            "
+                            >{{ step.label }}</span
+                        >
+                    </component>
+                    <span
+                        v-if="stepIndex < steps.length - 1"
+                        class="h-px w-3 sm:w-auto sm:flex-1"
+                        :class="
+                            stepIndex < currentIndex
+                                ? 'bg-success/60'
+                                : 'bg-border'
+                        "
+                        aria-hidden="true"
+                    />
+                </li>
+            </ol>
+        </nav>
+    </div>
 </template>

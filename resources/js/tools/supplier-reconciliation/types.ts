@@ -23,6 +23,7 @@ export type FileSummary = {
     format: 'csv' | 'xlsx';
     format_label: string;
     details: Record<string, string>;
+    sample?: boolean;
     rows: number;
     columns: number;
     header_row: number;

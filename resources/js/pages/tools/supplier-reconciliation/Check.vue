@@ -1,11 +1,18 @@
 <script setup lang="ts">
 import { Form, Head, Link, usePage } from '@inertiajs/vue3';
-import { AlertTriangle, ArrowRight, CircleCheck, CircleX } from '@lucide/vue';
+import {
+    ArrowRight,
+    CircleCheck,
+    CircleX,
+    LoaderCircle,
+    TriangleAlert,
+} from '@lucide/vue';
 import { computed } from 'vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { reconcile, summary } from '@/routes/supplier-reconciliation';
 import { edit as mappingEdit } from '@/routes/supplier-reconciliation/mapping';
+import PageHeading from '@/tools/supplier-reconciliation/components/PageHeading.vue';
 import StepNav from '@/tools/supplier-reconciliation/components/StepNav.vue';
 import type {
     PreflightReport,
@@ -33,45 +40,53 @@ const fieldLabels: Record<string, string> = {
 </script>
 
 <template>
-    <Head title="Check — Supplier reconciliation" />
+    <Head title="Check — Supplier Statement Checker" />
 
     <StepNav :run="run" current="check" />
 
-    <h1 class="text-2xl font-semibold tracking-tight">Before reconciling</h1>
-    <p class="text-muted-foreground mt-1">
-        A quick check of what was read from both files.
-    </p>
+    <PageHeading title="Before reconciling">
+        A quick check of what was read from both files. Nothing is matched until
+        you start the reconciliation.
+    </PageHeading>
 
-    <div class="mt-6 grid gap-6 lg:grid-cols-2">
+    <div class="mt-8 grid gap-6 lg:grid-cols-2">
         <section
             v-for="entry in sides"
             :key="entry.side"
-            class="bg-background rounded-xl border p-5"
+            class="bg-card rounded-xl border p-6 shadow-xs"
         >
-            <h2 class="font-medium">{{ entry.title }}</h2>
-            <p class="mt-1 text-2xl font-semibold">
-                {{ report.sides[entry.side].transactions.toLocaleString() }}
-                <span class="text-muted-foreground text-base font-normal"
-                    >lines to reconcile</span
-                >
+            <h2
+                class="text-muted-foreground text-xs font-medium tracking-[0.14em] uppercase"
+            >
+                {{ entry.title }}
+            </h2>
+            <p class="mt-2 flex items-baseline gap-2">
+                <span class="figure text-4xl font-medium">{{
+                    report.sides[entry.side].transactions.toLocaleString()
+                }}</span>
+                <span class="text-muted-foreground">lines to reconcile</span>
             </p>
 
-            <ul class="mt-4 flex flex-wrap gap-4 text-sm">
+            <ul class="mt-5 flex flex-wrap gap-2 text-sm">
                 <li
                     v-for="(present, field) in report.sides[entry.side].fields"
                     :key="field"
-                    class="flex items-center gap-1"
+                    class="flex items-center gap-1.5 rounded-full px-2.5 py-1"
+                    :class="
+                        present
+                            ? 'bg-success-soft text-success-strong'
+                            : 'bg-danger-soft text-danger-strong'
+                    "
                 >
-                    <CircleCheck
-                        v-if="present"
-                        class="size-4 text-emerald-600"
-                    />
-                    <CircleX v-else class="size-4 text-rose-600" />
+                    <CircleCheck v-if="present" class="size-4" />
+                    <CircleX v-else class="size-4" />
                     {{ fieldLabels[field] }}
                 </li>
             </ul>
 
-            <ul class="text-muted-foreground mt-4 space-y-1 text-sm">
+            <ul
+                class="text-muted-foreground mt-5 space-y-1.5 border-t pt-4 text-sm"
+            >
                 <li
                     v-for="convention in report.sides[entry.side].conventions"
                     :key="convention"
@@ -92,9 +107,7 @@ const fieldLabels: Record<string, string> = {
                 v-if="report.sides[entry.side].row_issues.length"
                 class="mt-4 text-sm"
             >
-                <summary
-                    class="cursor-pointer text-amber-700 dark:text-amber-400"
-                >
+                <summary class="text-warning-strong cursor-pointer font-medium">
                     {{ report.sides[entry.side].row_issues.length }} row(s) with
                     values that could not be read
                 </summary>
@@ -103,7 +116,9 @@ const fieldLabels: Record<string, string> = {
                         v-for="issue in report.sides[entry.side].row_issues"
                         :key="issue.row"
                     >
-                        <span class="font-medium">Row {{ issue.row }}:</span>
+                        <span class="figure font-medium"
+                            >Row {{ issue.row }}:</span
+                        >
                         {{ issue.issues.join(' ') }}
                     </li>
                 </ul>
@@ -113,17 +128,14 @@ const fieldLabels: Record<string, string> = {
 
     <div
         v-if="report.blocking.length"
-        class="mt-6 rounded-xl border border-rose-300 bg-rose-50 p-5 dark:border-rose-900 dark:bg-rose-950"
+        class="bg-danger-soft text-danger-strong border-danger/40 mt-6 rounded-xl border p-5"
+        role="alert"
     >
-        <h2
-            class="flex items-center gap-2 font-medium text-rose-900 dark:text-rose-200"
-        >
+        <h2 class="flex items-center gap-2 font-semibold">
             <CircleX class="size-5" />
             Review required before reconciliation
         </h2>
-        <ul
-            class="mt-2 list-disc space-y-1 pl-6 text-sm text-rose-900 dark:text-rose-200"
-        >
+        <ul class="mt-2 list-disc space-y-1 pl-7 text-sm">
             <li v-for="message in report.blocking" :key="message">
                 {{ message }}
             </li>
@@ -132,26 +144,24 @@ const fieldLabels: Record<string, string> = {
 
     <div
         v-if="report.warnings.length"
-        class="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-5 dark:border-amber-900 dark:bg-amber-950"
+        class="bg-warning-soft text-warning-strong border-warning/40 mt-6 rounded-xl border p-5"
     >
-        <h2
-            class="flex items-center gap-2 font-medium text-amber-900 dark:text-amber-200"
-        >
-            <AlertTriangle class="size-5" />
+        <h2 class="flex items-center gap-2 font-semibold">
+            <TriangleAlert class="size-5" />
             Worth checking
         </h2>
-        <ul
-            class="mt-2 list-disc space-y-1 pl-6 text-sm text-amber-900 dark:text-amber-200"
-        >
+        <ul class="mt-2 list-disc space-y-1 pl-7 text-sm">
             <li v-for="message in report.warnings" :key="message">
                 {{ message }}
             </li>
         </ul>
     </div>
 
-    <div class="mt-8 flex flex-wrap items-center justify-between gap-4">
+    <div
+        class="mt-8 flex flex-wrap items-center justify-between gap-4 border-t pt-6"
+    >
         <Button variant="outline" as-child>
-            <Link :href="mappingEdit(run.id)">Adjust the mapping</Link>
+            <Link :href="mappingEdit(run.id)">Adjust the columns</Link>
         </Button>
 
         <Button v-if="run.reconciled" as-child size="lg">
@@ -164,11 +174,11 @@ const fieldLabels: Record<string, string> = {
             v-else
             v-bind="reconcile.form(run.id)"
             v-slot="{ processing }"
-            class="flex flex-col items-end gap-2"
+            class="flex flex-wrap items-center justify-end gap-4"
         >
             <p
                 v-if="report.ready"
-                class="flex items-center gap-1 text-sm text-emerald-700 dark:text-emerald-400"
+                class="text-success-strong flex items-center gap-1.5 text-sm font-medium"
             >
                 <CircleCheck class="size-4" /> Ready to reconcile
             </p>
@@ -177,11 +187,12 @@ const fieldLabels: Record<string, string> = {
                 size="lg"
                 :disabled="!report.ready || processing"
             >
-                <template v-if="processing">Reconciling…</template>
-                <template v-else>Reconcile</template>
-                <ArrowRight />
+                <template v-if="processing">
+                    <LoaderCircle class="animate-spin" /> Reconciling…
+                </template>
+                <template v-else>Reconcile <ArrowRight /></template>
             </Button>
-            <InputError :message="reconcileError" />
+            <InputError class="w-full text-right" :message="reconcileError" />
         </Form>
     </div>
 </template>

@@ -37,33 +37,33 @@ encore ni clients, ni fournisseurs, ni mappings sauvegardés, ni historique comm
 
 ## A. Socle mjtools
 
-| Élément                                              | État | Notes                                                                      |
-| ---------------------------------------------------- | ---- | -------------------------------------------------------------------------- |
-| Laravel 13, Inertia 3, Vue 3, TypeScript, Tailwind 4 | ✅   | Socle installé                                                             |
-| Architecture modulaire `app/Tools/<Tool>`            | ✅   | SupplierReconciliation est le premier module                               |
-| Authentification Fortify, 2FA et passkeys            | ✅   | Pas encore reliée au produit payant                                        |
-| Page d'accueil listant les outils                    | 🟡   | Le positionnement « finance teams » doit être corrigé                      |
-| Nom local de l'application                           | ⚠️   | `.env` utilise encore `APP_NAME=Laravel`; `.env.example` utilise `mjtools` |
-| Traductions                                          | ⏸️   | Interface anglaise et textes en dur; internationalisation prévue plus tard |
+| Élément                                              | État | Notes                                                                                       |
+| ---------------------------------------------------- | ---- | ------------------------------------------------------------------------------------------- |
+| Laravel 13, Inertia 3, Vue 3, TypeScript, Tailwind 4 | ✅   | Socle installé                                                                              |
+| Architecture modulaire `app/Tools/<Tool>`            | ✅   | SupplierReconciliation est le premier module                                                |
+| Authentification Fortify, 2FA et passkeys            | ✅   | Pas encore reliée au produit payant                                                         |
+| Page d'accueil listant les outils                    | ✅   | Repositionnée : « petits outils pour vérifications fastidieuses », non limitée à la finance |
+| Nom de l'application                                 | ✅   | `mjtools` par défaut (`config/app.php`, `app.ts`) ; `.env` local corrigé                    |
+| Traductions                                          | ⏸️   | Interface anglaise et textes en dur; internationalisation prévue plus tard                  |
 
 ## B. Import et préparation
 
-| Élément                                         | État | Notes                                                                |
-| ----------------------------------------------- | ---- | -------------------------------------------------------------------- |
-| Import CSV                                      | ✅   | Séparateur et encodages courants détectés                            |
-| Import XLSX                                     | 🟡   | Code présent; OpenSpout absent du `vendor` local au dernier contrôle |
-| Refus explicite XLS/PDF/images                  | ✅   | Conforme au périmètre A                                              |
-| Limites et protection ZIP bomb                  | ✅   | Taille, lignes, colonnes et taille décompressée                      |
-| Détection et modification de la ligne d'en-tête | ✅   | Fonctionnel                                                          |
-| Mapping des colonnes et valeurs d'exemple       | ✅   | Référence, date, montants, type, description, fournisseur            |
-| Conventions date, décimales et signes           | ✅   | Confirmables par fichier                                             |
-| Filtre fournisseur                              | ✅   | Disponible si la colonne est mappée                                  |
-| Fichiers imparfaits courants                    | 🟡   | Plusieurs cas couverts; corpus réel à renforcer                      |
-| Choix de feuille XLSX                           | 🔴   | Première feuille non vide uniquement                                 |
-| Référence secondaire                            | 🔴   | Une seule colonne actuellement                                       |
-| Devise unique et garde-fous                     | 🔴   | Priorité A2                                                          |
-| Contrôle facultatif du solde                    | 🔴   | Priorité A2                                                          |
-| PDF texte / OCR                                 | ⏸️   | Périmètre C après validation                                         |
+| Élément                                         | État | Notes                                                                                          |
+| ----------------------------------------------- | ---- | ---------------------------------------------------------------------------------------------- |
+| Import CSV                                      | ✅   | Séparateur et encodages courants détectés                                                      |
+| Import XLSX                                     | 🟡   | Code présent; OpenSpout absent du `vendor` local au dernier contrôle                           |
+| Refus explicite XLS/PDF/images                  | ✅   | Conforme au périmètre A                                                                        |
+| Limites et protection ZIP bomb                  | ✅   | Taille, lignes, colonnes et taille décompressée                                                |
+| Détection et modification de la ligne d'en-tête | ✅   | Fonctionnel                                                                                    |
+| Mapping des colonnes et valeurs d'exemple       | ✅   | Référence, date, montants, type, description, fournisseur                                      |
+| Conventions date, décimales et signes           | ✅   | Confirmables par fichier                                                                       |
+| Filtre fournisseur                              | ✅   | Disponible si la colonne est mappée                                                            |
+| Fichiers imparfaits courants                    | 🟡   | Plusieurs cas couverts (dont pied de page texte dans la colonne Date); corpus réel à renforcer |
+| Choix de feuille XLSX                           | 🔴   | Première feuille non vide uniquement                                                           |
+| Référence secondaire                            | 🔴   | Une seule colonne actuellement                                                                 |
+| Devise unique et garde-fous                     | 🔴   | Priorité A2                                                                                    |
+| Contrôle facultatif du solde                    | 🔴   | Priorité A2                                                                                    |
+| PDF texte / OCR                                 | ⏸️   | Périmètre C après validation                                                                   |
 
 ## C. Moteur de rapprochement
 
@@ -85,18 +85,18 @@ encore ni clients, ni fournisseurs, ni mappings sauvegardés, ni historique comm
 
 ## D. Parcours et résultats
 
-| Élément                                    | État | Notes                                                |
-| ------------------------------------------ | ---- | ---------------------------------------------------- |
-| Démarrage sans compte                      | ✅   | Fonctionnel                                          |
-| Upload, mapping et preflight               | ✅   | Fonctionnel                                          |
-| Synthèse centrée sur les exceptions        | ✅   | Le pourcentage décrit le travail évité               |
-| Revue filtrée                              | ✅   | Matches masqués par défaut                           |
-| Confirm, Reject, Manual Match, Defer, Undo | ✅   | Décisions séparées du moteur                         |
-| Export CSV                                 | ✅   | Protection formula injection                         |
-| Export XLSX                                | 🟡   | Code présent; dépendance locale à restaurer          |
-| Classeur d'audit enrichi                   | 🟡   | Export existant à renforcer avant l'offre Cabinet    |
-| Jeu d'exemple en un clic                   | 🔴   | Priorité avant publication                           |
-| Design et confiance visuelle               | 🟡   | Parcours utilisable, direction visuelle à travailler |
+| Élément                                    | État | Notes                                                                                                                                                      |
+| ------------------------------------------ | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Démarrage sans compte                      | ✅   | Fonctionnel                                                                                                                                                |
+| Upload, mapping et preflight               | ✅   | Fonctionnel                                                                                                                                                |
+| Synthèse centrée sur les exceptions        | ✅   | Le pourcentage décrit le travail évité                                                                                                                     |
+| Revue filtrée                              | ✅   | Matches masqués par défaut                                                                                                                                 |
+| Confirm, Reject, Manual Match, Defer, Undo | ✅   | Décisions séparées du moteur                                                                                                                               |
+| Export CSV                                 | ✅   | Protection formula injection                                                                                                                               |
+| Export XLSX                                | 🟡   | Code présent; dépendance locale à restaurer                                                                                                                |
+| Classeur d'audit enrichi                   | 🟡   | Export existant à renforcer avant l'offre Cabinet                                                                                                          |
+| Jeu d'exemple en un clic                   | ✅   | « Try with sample files » : fournisseur fictif couvrant tous les statuts, téléchargeable ; `SampleRunTest`                                                 |
+| Design et confiance visuelle               | ✅   | Direction « Précision comptable » (papier/encre, Source Serif 4, IBM Plex), clair/sombre/mobile vérifiés au navigateur ; retours utilisateurs à recueillir |
 
 ## E. Persistance et confidentialité
 
@@ -183,11 +183,13 @@ Ces chiffres doivent être remplacés par le prochain résultat complet, pas sim
 
 ## Journal des changements
 
-| Date       | Changement                                            | Preuve                                    |
-| ---------- | ----------------------------------------------------- | ----------------------------------------- |
-| 2026-10-01 | Environnement de tests rétabli : suite complète verte | 224/224, pint, phpstan, vp check, vue-tsc |
-| 2026-10-01 | Création du suivi et séparation des périmètres A/B/C  | Spec et plan mis à jour                   |
-| 2026-09-30 | Migration MySQL corrigée (`TIMESTAMP` → `DATETIME`)   | `php artisan migrate` réussi              |
+| Date       | Changement                                                 | Preuve                                                         |
+| ---------- | ---------------------------------------------------------- | -------------------------------------------------------------- |
+| 2026-10-01 | Design system mjtools, refonte de l'accueil et du parcours | Vérification navigateur clair/sombre/mobile, vp check, vue-tsc |
+| 2026-10-01 | Jeu d'exemple en un clic + correction pied de page texte   | `SampleRunTest`, `MappingTest`                                 |
+| 2026-10-01 | Environnement de tests rétabli : suite complète verte      | 224/224, pint, phpstan, vp check, vue-tsc                      |
+| 2026-10-01 | Création du suivi et séparation des périmètres A/B/C       | Spec et plan mis à jour                                        |
+| 2026-09-30 | Migration MySQL corrigée (`TIMESTAMP` → `DATETIME`)        | `php artisan migrate` réussi                                   |
 
 ## Règle de maintenance
 
