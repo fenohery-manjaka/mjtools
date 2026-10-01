@@ -15,6 +15,15 @@ return [
     ],
 
     /*
+    | "Do this every month?" question shown after a reconciliation, used to
+    | measure interest in the paid product before building it (spec §43).
+    | The price is only displayed: nothing is sold yet.
+    */
+    'paid_intent' => [
+        'price' => env('SUPPLIER_RECONCILIATION_PRICE_LABEL', '€29 / month'),
+    ],
+
+    /*
     | Matching thresholds (see MatchingPolicy). Prudent defaults; to be
     | calibrated with real data.
     */

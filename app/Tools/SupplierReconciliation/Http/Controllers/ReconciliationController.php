@@ -5,6 +5,7 @@ namespace App\Tools\SupplierReconciliation\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Tools\SupplierReconciliation\Domain\Side;
 use App\Tools\SupplierReconciliation\Http\Presenters\RunPresenter;
+use App\Tools\SupplierReconciliation\Interest\InterestResponse;
 use App\Tools\SupplierReconciliation\Mapping\BalanceCheck;
 use App\Tools\SupplierReconciliation\Mapping\PreflightCheck;
 use App\Tools\SupplierReconciliation\Mapping\PreparedSide;
@@ -94,7 +95,23 @@ class ReconciliationController extends Controller
             'run' => $this->presenter->run($run),
             'summary' => $reviewed->summary(),
             'balance' => $statement === null ? null : (new BalanceCheck)->check($statement->built->transactions),
+            'intent' => [
+                'sent' => (bool) $request->session()->get(InterestController::SESSION_KEY, false),
+                'price' => (string) config('supplier-reconciliation.paid_intent.price'),
+                'suppliers_per_month' => $this->options(InterestResponse::SUPPLIERS_PER_MONTH),
+                'accounting_software' => $this->options(InterestResponse::ACCOUNTING_SOFTWARE),
+                'price_answers' => $this->options(InterestResponse::PRICE_ANSWERS),
+            ],
         ]);
+    }
+
+    /**
+     * @param  array<string, string>  $labels
+     * @return list<array{value: string, label: string}>
+     */
+    private function options(array $labels): array
+    {
+        return array_map(fn (string $value, string $label): array => ['value' => $value, 'label' => $label], array_keys($labels), $labels);
     }
 
     /**

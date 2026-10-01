@@ -100,16 +100,16 @@ encore ni clients, ni fournisseurs, ni mappings sauvegardés, ni historique comm
 
 ## E. Persistance et confidentialité
 
-| Élément                               | État | Notes                                                                                          |
-| ------------------------------------- | ---- | ---------------------------------------------------------------------------------------------- |
-| Session anonyme liée au navigateur    | ✅   | Jeton aléatoire haché, en session et dans un cookie chiffré HttpOnly                           |
-| Fichier brut non conservé             | ✅   | Cellules extraites persistées temporairement                                                   |
-| Rétention 24 h et purge               | ✅   | Suppression manuelle disponible                                                                |
-| Isolation des sessions                | ✅   | Couverture Feature présente                                                                    |
-| Durée session/rétention cohérente     | ✅   | Cookie dédié valable pendant la rétention (24 h) ; date de suppression affichée à chaque étape |
-| Compteurs sans données comptables     | ✅   | `UsageLog` présent                                                                             |
-| Funnel produit complet                | 🟡   | Intention payante et retours à ajouter                                                         |
-| Chiffrement et isolation multi-tenant | 🔴   | Obligatoires avec le périmètre B                                                               |
+| Élément                               | État | Notes                                                                                                                                                            |
+| ------------------------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Session anonyme liée au navigateur    | ✅   | Jeton aléatoire haché, en session et dans un cookie chiffré HttpOnly                                                                                             |
+| Fichier brut non conservé             | ✅   | Cellules extraites persistées temporairement                                                                                                                     |
+| Rétention 24 h et purge               | ✅   | Suppression manuelle disponible                                                                                                                                  |
+| Isolation des sessions                | ✅   | Couverture Feature présente                                                                                                                                      |
+| Durée session/rétention cohérente     | ✅   | Cookie dédié valable pendant la rétention (24 h) ; date de suppression affichée à chaque étape                                                                   |
+| Compteurs sans données comptables     | ✅   | `UsageLog` présent                                                                                                                                               |
+| Funnel produit complet                | 🟡   | Intention payante mesurée (clic, questionnaire, prix affiché, email facultatif ; `php artisan supplier-reconciliation:interest`) ; retours qualitatifs à ajouter |
+| Chiffrement et isolation multi-tenant | 🔴   | Obligatoires avec le périmètre B                                                                                                                                 |
 
 ## F. Qualité et environnement
 
@@ -185,6 +185,7 @@ Ces chiffres doivent être remplacés par le prochain résultat complet, pas sim
 
 | Date       | Changement                                                         | Preuve                                                               |
 | ---------- | ------------------------------------------------------------------ | -------------------------------------------------------------------- |
+| 2026-10-02 | CTA « Save this supplier » : mesure de l'intention payante         | `InterestTest` ; navigateur                                          |
 | 2026-10-02 | Accès au rapprochement aligné sur la rétention (cookie 24 h)       | Test Feature cookie/session ; 257/257                                |
 | 2026-10-02 | Contrôle facultatif du solde du relevé (check + synthèse)          | `BalanceCheckTest`, `SampleRunTest` ; 256/256                        |
 | 2026-10-02 | Devise unique par rapprochement (détection, confirmation, blocage) | `CurrencyCheckTest`, `CurrencyDetectorTest`, tests Feature ; 251/251 |

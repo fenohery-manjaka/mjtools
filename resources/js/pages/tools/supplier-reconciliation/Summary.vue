@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { exportMethod, review } from '@/routes/supplier-reconciliation';
 import DeleteRunButton from '@/tools/supplier-reconciliation/components/DeleteRunButton.vue';
 import BalanceStatus from '@/tools/supplier-reconciliation/components/BalanceStatus.vue';
+import SaveSupplierIntent from '@/tools/supplier-reconciliation/components/SaveSupplierIntent.vue';
 import StepNav from '@/tools/supplier-reconciliation/components/StepNav.vue';
 import {
     dotClasses,
@@ -14,6 +15,7 @@ import {
 } from '@/tools/supplier-reconciliation/tones';
 import type {
     BalanceResult,
+    Intent,
     Run,
     Summary,
 } from '@/tools/supplier-reconciliation/types';
@@ -22,6 +24,7 @@ const props = defineProps<{
     run: Run;
     summary: Summary;
     balance: BalanceResult | null;
+    intent: Intent;
 }>();
 
 const categories = computed(() => {
@@ -337,19 +340,13 @@ const clearedWidth = computed(
         :currency="run.currency"
     />
 
-    <section
-        class="border-primary/20 bg-accent/50 mt-6 rounded-xl border p-6 sm:p-8"
-    >
-        <p class="font-display text-xl font-semibold tracking-tight">
-            You reconciled
-            {{ summary.analyzed_lines.toLocaleString() }} lines and only needed
-            to review {{ summary.engine_attention_items }}. Do this every month?
-        </p>
-        <p class="text-muted-foreground mt-2">
-            Saving suppliers and their mappings, so you don't have to configure
-            them again, is on our roadmap.
-        </p>
-    </section>
+    <SaveSupplierIntent
+        class="mt-6"
+        :run-id="run.id"
+        :intent="intent"
+        :analyzed-lines="summary.analyzed_lines"
+        :reviewed-items="summary.engine_attention_items"
+    />
 
     <div class="mt-6">
         <DeleteRunButton :run-id="run.id" />

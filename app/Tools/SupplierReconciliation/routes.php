@@ -3,6 +3,7 @@
 use App\Tools\SupplierReconciliation\Http\Controllers\CheckerController;
 use App\Tools\SupplierReconciliation\Http\Controllers\ExportController;
 use App\Tools\SupplierReconciliation\Http\Controllers\FileController;
+use App\Tools\SupplierReconciliation\Http\Controllers\InterestController;
 use App\Tools\SupplierReconciliation\Http\Controllers\MappingController;
 use App\Tools\SupplierReconciliation\Http\Controllers\ReconciliationController;
 use App\Tools\SupplierReconciliation\Http\Controllers\ReviewController;
@@ -36,6 +37,9 @@ Route::prefix('runs/{run}')->group(function () {
     Route::get('review', [ReviewController::class, 'index'])->name('review');
     Route::post('decisions', [ReviewController::class, 'store'])->name('decisions.store');
     Route::delete('decisions/{decision}', [ReviewController::class, 'destroy'])->name('decisions.destroy');
+
+    Route::post('interest/click', [InterestController::class, 'click'])->middleware('throttle:20,1')->name('interest.click');
+    Route::post('interest', [InterestController::class, 'store'])->middleware('throttle:10,1')->name('interest.store');
 
     Route::get('export/{format}', [ExportController::class, 'show'])->whereIn('format', ['csv', 'xlsx'])->name('export');
 });

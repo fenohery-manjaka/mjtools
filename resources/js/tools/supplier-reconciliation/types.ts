@@ -114,6 +114,14 @@ export type BalanceResult = {
     message: string;
 };
 
+export type Intent = {
+    sent: boolean;
+    price: string;
+    suppliers_per_month: Option[];
+    accounting_software: Option[];
+    price_answers: Option[];
+};
+
 export type AmountTotal = { count: number; total: string };
 
 export type Summary = {

@@ -4,6 +4,7 @@ namespace App\Tools\SupplierReconciliation;
 
 use App\Tools\SupplierReconciliation\Import\FileImporter;
 use App\Tools\SupplierReconciliation\Import\ImportLimits;
+use App\Tools\SupplierReconciliation\Interest\InterestReport;
 use App\Tools\SupplierReconciliation\Matching\MatchingPolicy;
 use App\Tools\SupplierReconciliation\Matching\ReconciliationEngine;
 use App\Tools\SupplierReconciliation\Runs\PurgeExpiredRuns;
@@ -48,7 +49,7 @@ class SupplierReconciliationServiceProvider extends ServiceProvider
             ->group(__DIR__.'/routes.php');
 
         if ($this->app->runningInConsole()) {
-            $this->commands([PurgeExpiredRuns::class]);
+            $this->commands([PurgeExpiredRuns::class, InterestReport::class]);
         }
 
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {

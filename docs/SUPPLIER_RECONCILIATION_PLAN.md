@@ -331,6 +331,11 @@ décision humaine, lignes relevé/ledger (originaux), écart, raisons. Aucun mat
   ~95 Mo de mémoire à la limite de 2 × 5 000 lignes.
 - Signaux d'usage (§49) : `Runs/UsageLog` journalise des compteurs uniquement
   (`supplier-reconciliation.*` dans les logs), jamais de références ni de montants.
+- Intention payante (§43) : après la synthèse, « Save this supplier » enregistre le clic
+  (`UsageLog`) puis un questionnaire court (fournisseurs par mois, logiciel comptable, réponse au
+  prix affiché `supplier-reconciliation.paid_intent.price`, email facultatif) dans
+  `supplier_reconciliation_interest`, sans lien avec un rapprochement ni donnée comptable.
+  Synthèse : `php artisan supplier-reconciliation:interest`. Rien n'est vendu à ce stade.
 - Limites connues :
     - une seule colonne de référence par fichier (pas de « référence externe » secondaire) ;
     - « formatting » considère `INV-12-3` et `INV-123` comme identiques (séparateurs ignorés) ;
