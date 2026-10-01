@@ -33,6 +33,7 @@ export type FileSummary = {
     format_label: string;
     details: Record<string, string>;
     sample?: boolean;
+    sheets?: string[];
     rows: number;
     columns: number;
     header_row: number;

@@ -21,9 +21,9 @@ final class RunFiles
     /**
      * @throws ImportException
      */
-    public function attach(ReconciliationRun $run, Side $side, string $path, string $name, int $size, bool $sample = false): RawTable
+    public function attach(ReconciliationRun $run, Side $side, string $path, string $name, int $size, bool $sample = false, ?string $sheet = null): RawTable
     {
-        $raw = $this->importer->import($path);
+        $raw = $this->importer->import($path, $sheet);
 
         $headerIndex = (new HeaderDetector)->detect($raw);
         $mapping = (new ColumnDetector)->suggest(ImportedTable::fromRaw($raw, $headerIndex), $side, $headerIndex);
@@ -35,6 +35,7 @@ final class RunFiles
             'format' => $raw->format->value,
             'format_label' => $raw->format->label(),
             'details' => $raw->details,
+            'sheets' => $raw->sheets,
             'sample' => $sample,
         ];
         $run->{"{$prefix}_table"} = $raw->toArray();

@@ -10,9 +10,14 @@ const props = defineProps<{
     runId: string;
     side: Side;
     maxFileMb: number;
+    /** Worksheet to read in a workbook; the most relevant one when empty. */
+    sheet?: string;
 }>();
 
-const form = useForm<{ file: File | null }>({ file: null });
+const form = useForm<{ file: File | null; sheet: string }>({
+    file: null,
+    sheet: '',
+});
 const dragging = ref(false);
 const input = ref<HTMLInputElement | null>(null);
 
@@ -22,6 +27,7 @@ function upload(file: File | undefined): void {
     }
 
     form.file = file;
+    form.sheet = props.sheet ?? '';
     form.post(store.url({ run: props.runId, side: props.side }), {
         preserveScroll: true,
         onFinish: () => {

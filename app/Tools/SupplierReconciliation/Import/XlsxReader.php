@@ -12,27 +12,48 @@ use OpenSpout\Reader\XLSX\Reader;
 use ZipArchive;
 
 /**
- * Reads the first non-empty worksheet of an XLSX workbook as text.
+ * Reads one worksheet of an XLSX workbook as text: the requested one, or else
+ * the sheet that looks most like a list of transactions (most rows holding
+ * both a date and a number), the first one winning ties. Cover pages and
+ * summaries before the data are thus skipped. The names of all sheets are
+ * kept so that the user can ask for another one.
+ *
  * Date cells become ISO dates, numbers keep a plain dot-decimal form.
  */
 final class XlsxReader
 {
-    public function read(string $path, ImportLimits $limits): RawTable
+    private const MAX_SHEETS = 20;
+
+    public function read(string $path, ImportLimits $limits, ?string $sheetName = null): RawTable
     {
         $this->guardArchive($path, $limits);
 
         // Empty rows are preserved so row numbers match the workbook.
         $reader = new Reader(new Options(SHOULD_PRESERVE_EMPTY_ROWS: true));
+        $names = [];
+        $best = null;
+        $bestScore = -1;
+        $tooLarge = false;
 
         try {
             $reader->open($path);
 
             foreach ($reader->getSheetIterator() as $sheet) {
+                $names[] = $sheet->getName();
+
+                if (count($names) > self::MAX_SHEETS || ($sheetName !== null && $sheet->getName() !== $sheetName)) {
+                    continue;
+                }
+
                 $rows = [];
 
                 foreach ($sheet->getRowIterator() as $row) {
+                    // A sheet over the limit is skipped, unless it is the one asked for.
                     if (count($rows) > $limits->maxRows) {
-                        throw ImportException::tooManyRows($limits->maxRows);
+                        $tooLarge = true;
+                        $rows = null;
+
+                        break;
                     }
 
                     $count = $row->getNumCells();
@@ -54,8 +75,15 @@ final class XlsxReader
                     $rows[] = $cells;
                 }
 
-                if ($this->hasContent($rows)) {
-                    return new RawTable(FileFormat::Xlsx, $rows, ['sheet' => $sheet->getName()]);
+                if ($rows === null) {
+                    continue;
+                }
+
+                $score = $this->hasContent($rows) ? $this->transactionLikeRows($rows) : -1;
+
+                if ($score > $bestScore) {
+                    $best = ['name' => $sheet->getName(), 'rows' => $rows];
+                    $bestScore = $score;
                 }
             }
         } catch (OpenSpoutException) {
@@ -64,7 +92,48 @@ final class XlsxReader
             $reader->close();
         }
 
-        throw ImportException::empty();
+        if ($sheetName !== null && ! in_array($sheetName, $names, true)) {
+            throw ImportException::sheetNotFound();
+        }
+
+        if ($best === null) {
+            throw $tooLarge ? ImportException::tooManyRows($limits->maxRows) : ImportException::empty();
+        }
+
+        $position = array_search($best['name'], $names, true);
+        $details = ['sheet' => count($names) > 1 ? sprintf('%s (%d of %d)', $best['name'], (int) $position + 1, count($names)) : $best['name']];
+
+        return new RawTable(FileFormat::Xlsx, $best['rows'], $details, $names);
+    }
+
+    /**
+     * Rows holding at least one date and one other number: the shape of a
+     * statement or ledger line.
+     *
+     * @param  list<list<string>>  $rows
+     */
+    private function transactionLikeRows(array $rows): int
+    {
+        $count = 0;
+
+        foreach ($rows as $row) {
+            $dates = 0;
+            $numbers = 0;
+
+            foreach ($row as $cell) {
+                $cell = trim($cell);
+
+                if (preg_match('/^\d{4}-\d{2}-\d{2}( |$)|^\d{1,2}[.\/-]\d{1,2}[.\/-]\d{2,4}$/', $cell) === 1) {
+                    $dates++;
+                } elseif (preg_match('/^[-(]?[\d\s.,\x{00A0}\x{202F}]*\d[\d\s.,]*\)?-?$/u', $cell) === 1) {
+                    $numbers++;
+                }
+            }
+
+            $count += $dates > 0 && $numbers > 0 ? 1 : 0;
+        }
+
+        return $count;
     }
 
     private function guardArchive(string $path, ImportLimits $limits): void

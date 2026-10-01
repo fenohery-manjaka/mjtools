@@ -302,6 +302,34 @@ class ReconciliationFlowTest extends TestCase
         $this->assertSame('GBP', $run->currency);
     }
 
+    public function test_another_sheet_of_a_workbook_can_be_read(): void
+    {
+        $run = $this->startRun();
+        $workbook = fn (): UploadedFile => new UploadedFile(Files::workbook([
+            'Cover' => [['ACME Building Supplies'], ['Statement']],
+            'August' => [['Date', 'Ref', 'Amount'], ['01/08/2026', 'INV-1', 10]],
+            'September' => [['Date', 'Ref', 'Amount'], ['01/09/2026', 'INV-9', 90], ['02/09/2026', 'INV-10', 5]],
+        ]), 'statements.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
+
+        $this->post(route('supplier-reconciliation.files.store', [$run, 'statement']), ['file' => $workbook()])->assertSessionHasNoErrors();
+
+        $this->get(route('supplier-reconciliation.files.edit', $run))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('files.statement.sheets', ['Cover', 'August', 'September'])
+                ->where('files.statement.details.sheet', 'September (3 of 3)')
+                ->where('files.statement.rows', 2));
+
+        $this->post(route('supplier-reconciliation.files.store', [$run, 'statement']), ['file' => $workbook(), 'sheet' => 'August'])->assertSessionHasNoErrors();
+
+        $this->get(route('supplier-reconciliation.files.edit', $run))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('files.statement.details.sheet', 'August (2 of 3)')
+                ->where('files.statement.rows', 1));
+
+        $this->post(route('supplier-reconciliation.files.store', [$run, 'statement']), ['file' => $workbook(), 'sheet' => 'October'])
+            ->assertSessionHasErrors(['file' => 'The workbook has no sheet with this name. Choose one of its sheets.']);
+    }
+
     public function test_the_user_can_delete_their_data(): void
     {
         $run = $this->preparedRun();

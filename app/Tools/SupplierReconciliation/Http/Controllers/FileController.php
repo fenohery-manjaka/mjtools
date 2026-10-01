@@ -55,7 +55,8 @@ class FileController extends Controller
         }
 
         try {
-            $raw = $files->attach($run, $side, $path, $file->getClientOriginalName(), (int) $file->getSize());
+            $sheet = $request->validated('sheet');
+            $raw = $files->attach($run, $side, $path, $file->getClientOriginalName(), (int) $file->getSize(), sheet: is_string($sheet) && $sheet !== '' ? $sheet : null);
         } catch (ImportException $e) {
             UsageLog::record('import_failed', $run, ['side' => $side->value, 'reason' => $e->getMessage()]);
 

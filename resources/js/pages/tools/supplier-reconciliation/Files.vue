@@ -8,7 +8,7 @@ import {
     FlaskConical,
     ReceiptText,
 } from '@lucide/vue';
-import { computed } from 'vue';
+import { computed, reactive } from 'vue';
 import { Button } from '@/components/ui/button';
 import { edit as mappingEdit } from '@/routes/supplier-reconciliation/mapping';
 import { download as sampleDownload } from '@/routes/supplier-reconciliation/sample';
@@ -51,6 +51,15 @@ const usingSample = computed(
         props.files.statement?.sample === true ||
         props.files.ledger?.sample === true,
 );
+
+// Worksheet chosen to re-read a workbook, by side ('' = the most relevant one).
+const sheetChoice = reactive<Record<Side, string>>({
+    statement: '',
+    ledger: '',
+});
+
+const selectClass =
+    'border-input bg-background dark:bg-input/30 h-9 w-full rounded-md border px-2.5 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none';
 
 const ready = computed(
     () => props.files.statement !== null && props.files.ledger !== null,
@@ -164,13 +173,52 @@ function detailsLabel(details: Record<string, string>): string {
                         <summary
                             class="text-muted-foreground hover:text-foreground cursor-pointer text-sm"
                         >
-                            Replace this file
+                            <template
+                                v-if="
+                                    (files[entry.side]!.sheets ?? []).length > 1
+                                "
+                                >Replace this file or read another
+                                sheet</template
+                            >
+                            <template v-else>Replace this file</template>
                         </summary>
-                        <div class="mt-3">
+                        <div class="mt-3 space-y-3">
+                            <label
+                                v-if="
+                                    (files[entry.side]!.sheets ?? []).length > 1
+                                "
+                                class="block text-sm"
+                            >
+                                <span class="mb-1 block font-medium"
+                                    >Sheet to read</span
+                                >
+                                <select
+                                    v-model="sheetChoice[entry.side]"
+                                    :class="selectClass"
+                                >
+                                    <option value="">
+                                        The sheet that looks like transactions
+                                    </option>
+                                    <option
+                                        v-for="name in files[entry.side]!
+                                            .sheets"
+                                        :key="name"
+                                        :value="name"
+                                    >
+                                        {{ name }}
+                                    </option>
+                                </select>
+                                <span
+                                    class="text-muted-foreground mt-1 block text-xs"
+                                    >The file itself is never kept: choose it
+                                    again below to read this sheet.</span
+                                >
+                            </label>
                             <FileDropzone
                                 :run-id="run.id"
                                 :side="entry.side"
                                 :max-file-mb="limits.max_file_mb"
+                                :sheet="sheetChoice[entry.side]"
                             />
                         </div>
                     </details>

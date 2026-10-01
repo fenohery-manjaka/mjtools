@@ -14,7 +14,10 @@ final class FileImporter
         private readonly XlsxReader $xlsx = new XlsxReader,
     ) {}
 
-    public function import(string $path): RawTable
+    /**
+     * @param  ?string  $sheet  Worksheet to read in a workbook; the most relevant one when null.
+     */
+    public function import(string $path, ?string $sheet = null): RawTable
     {
         $size = @filesize($path);
 
@@ -31,7 +34,7 @@ final class FileImporter
         }
 
         $table = match ($this->detect($path)) {
-            FileFormat::Xlsx => $this->xlsx->read($path, $this->limits),
+            FileFormat::Xlsx => $this->xlsx->read($path, $this->limits, $sheet),
             FileFormat::Csv => $this->csv->read($path, $this->limits),
         };
 

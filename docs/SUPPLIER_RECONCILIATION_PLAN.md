@@ -104,7 +104,9 @@ Fichier ─► Import (RawTable) ─► détection en-têtes + mapping proposé 
 ## 5. Import et validation (spec §5, §7, §8, §37)
 
 - Formats : CSV (séparateur `,` `;` tab `|` détecté ; encodage UTF-8/UTF-8 BOM/UTF-16/Windows-1252),
-  XLSX (première feuille non vide, via `openspout/openspout`, streaming).
+  XLSX (via `openspout/openspout`, streaming) : la feuille contenant le plus de lignes « date +
+  nombre » est lue par défaut (pages de garde et synthèses ignorées) ; l'utilisateur peut demander
+  une autre feuille en redéposant le fichier, qui n'est jamais conservé.
 - XLS / PDF / images : refus explicite avec message (« enregistrez en XLSX ou CSV »).
 - Détection du type par contenu (signature ZIP / OLE / PDF), pas seulement par extension.
 - Limites (config) : 10 Mo, 5 000 lignes, 100 colonnes, taille décompressée XLSX bornée
@@ -351,7 +353,7 @@ par catégorie sans total trompeur). Une colonne _Currency_ figure dans les deux
 - Limites connues :
     - une seule colonne de référence par fichier (pas de « référence externe » secondaire) ;
     - « formatting » considère `INV-12-3` et `INV-123` comme identiques (séparateurs ignorés) ;
-    - pas de multi-devises, pas de XLS, première feuille non vide d'un XLSX seulement ;
+    - pas de multi-devises, pas de XLS ;
     - seuils de dates non encore calibrés sur des données réelles.
 
 Les éléments suivants restent à finaliser avant de considérer le Checker comme prêt à publier :
