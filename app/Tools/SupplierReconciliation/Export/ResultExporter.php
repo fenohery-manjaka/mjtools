@@ -10,6 +10,10 @@ use OpenSpout\Common\Entity\Cell;
 use OpenSpout\Common\Entity\Cell\NumericCell;
 use OpenSpout\Common\Entity\Cell\StringCell;
 use OpenSpout\Common\Entity\Row;
+use OpenSpout\Common\Entity\Style\Style;
+use OpenSpout\Writer\AutoFilter;
+use OpenSpout\Writer\Common\Entity\Sheet;
+use OpenSpout\Writer\XLSX\Entity\SheetView;
 use OpenSpout\Writer\XLSX\Writer;
 use RuntimeException;
 
@@ -76,7 +80,7 @@ final class ResultExporter
         return $rows;
     }
 
-    public function csv(ReviewedResult $result, ?string $currency = null): string
+    public function csv(ReviewedResult $result, ExportContext $context = new ExportContext): string
     {
         $handle = fopen('php://temp', 'r+');
 
@@ -88,7 +92,7 @@ final class ResultExporter
         fwrite($handle, "\xEF\xBB\xBF");
         fputcsv($handle, self::HEADERS, ',', '"', '');
 
-        foreach ($this->rows($result, $currency) as $row) {
+        foreach ($this->rows($result, $context->currency) as $row) {
             fputcsv($handle, array_map($this->neutralizeFormula(...), $row), ',', '"', '');
         }
 
@@ -100,32 +104,77 @@ final class ResultExporter
     }
 
     /**
-     * Writes an XLSX workbook (results + summary) to the given path.
+     * Writes an XLSX workbook to the given path: every result line, the open
+     * items only (the work list), and a summary of the reconciliation.
      */
-    public function xlsx(ReviewedResult $result, string $path, ?string $currency = null): void
+    public function xlsx(ReviewedResult $result, string $path, ExportContext $context = new ExportContext): void
     {
         $writer = new Writer;
         $writer->openToFile($path);
-        $writer->getCurrentSheet()->setName('Results');
-        $writer->addRow($this->textRow(self::HEADERS));
 
-        foreach ($this->rows($result, $currency) as $row) {
-            $writer->addRow($this->textRow($row));
-        }
+        $rows = $this->rows($result, $context->currency);
+        $this->tableSheet($writer->getCurrentSheet(), 'Results');
+        $this->writeTable($writer, $rows);
 
-        $writer->addNewSheetAndMakeItCurrent()->setName('Summary');
+        $open = array_values(array_filter($rows, fn (array $row): bool => in_array($row[0], $this->openItemIds($result), true)));
+        $this->tableSheet($writer->addNewSheetAndMakeItCurrent(), 'To review');
+        $this->writeTable($writer, $open);
 
-        foreach ($this->summaryRows($result) as $row) {
-            $writer->addRow($this->textRow($row));
+        $summary = $writer->addNewSheetAndMakeItCurrent();
+        $summary->setName('Summary');
+        $summary->setColumnWidth(48, 1);
+        $summary->setColumnWidth(60, 2);
+
+        foreach ($this->summaryRows($result, $context) as $index => $row) {
+            $writer->addRow($this->textRow($row, $index === 0 || $row[1] === '' ? $this->bold() : null));
         }
 
         $writer->close();
     }
 
     /**
+     * @param  list<list<string>>  $rows
+     */
+    private function writeTable(Writer $writer, array $rows): void
+    {
+        $writer->addRow($this->textRow(self::HEADERS, $this->bold()));
+
+        foreach ($rows as $row) {
+            $writer->addRow($this->textRow($row));
+        }
+
+        $writer->getCurrentSheet()->setAutoFilter(new AutoFilter(0, 1, count(self::HEADERS) - 1, max(1, count($rows) + 1)));
+    }
+
+    private function tableSheet(Sheet $sheet, string $name): void
+    {
+        $sheet->setName($name);
+        $sheet->setSheetView((new SheetView)->withFreezeRow(2));
+        $sheet->setColumnWidth(10, 1, 8, 12);
+        $sheet->setColumnWidth(18, 2, 3, 4, 5, 6, 9, 10, 11, 13, 14, 15, 16, 17);
+        $sheet->setColumnWidth(48, 7, 18, 19);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function openItemIds(ReviewedResult $result): array
+    {
+        return array_values(array_map(
+            fn (ReviewedItem $item): string => $item->id,
+            array_filter($result->items, fn (ReviewedItem $item): bool => $item->needsAttention()),
+        ));
+    }
+
+    private function bold(): Style
+    {
+        return (new Style)->withFontBold(true);
+    }
+
+    /**
      * @return list<list<string>>
      */
-    public function summaryRows(ReviewedResult $result): array
+    public function summaryRows(ReviewedResult $result, ExportContext $context = new ExportContext): array
     {
         $summary = $result->summary();
         /** @var array<string, int> $engine */
@@ -138,6 +187,15 @@ final class ResultExporter
         $auto = $summary['matched_automatically'];
 
         return [
+            ['Supplier statement reconciliation', ''],
+            ['Generated', $context->generatedAt ?? ''],
+            ['Supplier statement file', $context->statementFile ?? ''],
+            ['Ledger file', $context->ledgerFile ?? ''],
+            ['Currency (amounts are never converted)', $context->currency ?? ''],
+            ['Statement balance check', $context->balance === null ? 'Not available' : ucfirst($context->balance['status'])],
+            ['Statement balance details', $context->balance['message'] ?? ''],
+            ['', ''],
+            ['Engine result', ''],
             ['Lines analysed', (string) $summary['analyzed_lines']],
             ['Lines matched automatically', (string) $auto['lines']],
             ['Share of lines cleared automatically (%)', (string) $summary['cleared_automatically_percent']],
@@ -150,10 +208,15 @@ final class ResultExporter
             ['Amount mismatches (engine)', (string) $engine['amount_mismatch']],
             ['Duplicates suspected (engine)', (string) $engine['duplicate_suspected']],
             ['Review required (engine)', (string) $engine['review_required']],
+            ['Note', 'The share cleared automatically measures the checking work avoided, not an accuracy score.'],
+            ['', ''],
+            ['Your review (recorded separately from the engine)', ''],
             ['Confirmed by you', (string) $resolutions['confirmed']],
             ['Matched manually by you', (string) $resolutions['manual_match']],
             ['Rejected by you', (string) $resolutions['rejected']],
             ['Left for review', (string) $resolutions['deferred']],
+            ['', ''],
+            ['Amounts in open exceptions (not added together)', ''],
             ['Open invoices missing in ledger (total)', $amounts['missing_invoices']['total']],
             ['Open credits missing in ledger (total)', $amounts['missing_credits']['total']],
             ['Open amount differences (total)', $amounts['amount_differences']['total']],
@@ -167,12 +230,12 @@ final class ResultExporter
      *
      * @param  list<string>  $values
      */
-    private function textRow(array $values): Row
+    private function textRow(array $values, ?Style $style = null): Row
     {
         return new Row(array_map(
             fn (string $value): Cell => preg_match('/^-?\d{1,15}(\.\d{1,4})?$/', $value) === 1
-                ? new NumericCell(str_contains($value, '.') ? (float) $value : (int) $value, null)
-                : new StringCell($value, null),
+                ? new NumericCell(str_contains($value, '.') ? (float) $value : (int) $value, $style)
+                : new StringCell($value, $style),
             $values,
         ));
     }

@@ -3,7 +3,10 @@
 namespace App\Tools\SupplierReconciliation\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Tools\SupplierReconciliation\Domain\Side;
+use App\Tools\SupplierReconciliation\Export\ExportContext;
 use App\Tools\SupplierReconciliation\Export\ResultExporter;
+use App\Tools\SupplierReconciliation\Mapping\BalanceCheck;
 use App\Tools\SupplierReconciliation\Runs\ReconciliationRun;
 use App\Tools\SupplierReconciliation\Runs\RunAccess;
 use App\Tools\SupplierReconciliation\Runs\UsageLog;
@@ -28,12 +31,21 @@ class ExportController extends Controller
 
         UsageLog::record('exported', $run, ['format' => $format]);
 
+        $statement = $run->prepared(Side::Statement);
+        $context = new ExportContext(
+            currency: $run->currency,
+            statementFile: $run->statement_file['name'] ?? null,
+            ledgerFile: $run->ledger_file['name'] ?? null,
+            balance: $statement === null ? null : (new BalanceCheck)->check($statement->built->transactions, $statement->built->runningBalances),
+            generatedAt: now()->format('Y-m-d H:i'),
+        );
+
         $name = 'supplier-reconciliation-'.now()->format('Y-m-d');
 
         if ($format === 'csv') {
             return response()->streamDownload(
-                function () use ($exporter, $reviewed, $run): void {
-                    echo $exporter->csv($reviewed, $run->currency);
+                function () use ($exporter, $reviewed, $context): void {
+                    echo $exporter->csv($reviewed, $context);
                 },
                 "{$name}.csv",
                 ['Content-Type' => 'text/csv; charset=UTF-8'],
@@ -46,7 +58,7 @@ class ExportController extends Controller
             abort(500);
         }
 
-        $exporter->xlsx($reviewed, $path, $run->currency);
+        $exporter->xlsx($reviewed, $path, $context);
 
         return response()->download($path, "{$name}.xlsx", [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

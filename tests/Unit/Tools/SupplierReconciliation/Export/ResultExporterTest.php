@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Tools\SupplierReconciliation\Export;
 
+use App\Tools\SupplierReconciliation\Export\ExportContext;
 use App\Tools\SupplierReconciliation\Export\ResultExporter;
 use App\Tools\SupplierReconciliation\Import\FileImporter;
 use App\Tools\SupplierReconciliation\Matching\ReconciliationEngine;
@@ -92,6 +93,53 @@ class ResultExporterTest extends TestCase
         $this->assertSame('-420.00', $exporter->neutralizeFormula('-420.00'));
         $this->assertSame("'-1+1", $exporter->neutralizeFormula('-1+1'));
         $this->assertSame("'@SUM(A1)", $exporter->neutralizeFormula('@SUM(A1)'));
+    }
+
+    public function test_xlsx_has_a_work_list_of_open_items_and_a_summary_with_context(): void
+    {
+        $path = sys_get_temp_dir().'/mjtools-export-'.bin2hex(random_bytes(4)).'.xlsx';
+        $reviewed = $this->reviewed();
+        $open = count(array_filter($reviewed->items, fn ($item): bool => $item->needsAttention()));
+
+        try {
+            (new ResultExporter)->xlsx($reviewed, $path, new ExportContext(
+                currency: 'EUR',
+                statementFile: 'statement.csv',
+                ledgerFile: 'ledger.xlsx',
+                balance: ['status' => 'verified', 'message' => 'The closing balance equals the lines.'],
+                generatedAt: '2026-10-02 08:00',
+            ));
+
+            $zip = new \ZipArchive;
+            $zip->open($path);
+            $workbook = (string) $zip->getFromName('xl/workbook.xml');
+            $results = (string) $zip->getFromName('xl/worksheets/sheet1.xml');
+            $toReview = (string) $zip->getFromName('xl/worksheets/sheet2.xml');
+            $summary = (string) $zip->getFromName('xl/worksheets/sheet3.xml');
+            $zip->close();
+
+            $this->assertMatchesRegularExpression('/name="Results".*name="To review".*name="Summary"/s', $workbook);
+            $this->assertStringContainsString('autoFilter', $results);
+            $this->assertStringContainsString('ySplit="1"', $results);
+            // Header + one line per open item at least, fewer than all results.
+            $this->assertGreaterThanOrEqual($open + 1, substr_count($toReview, '<row '));
+            $this->assertLessThan(substr_count($results, '<row '), substr_count($toReview, '<row '));
+            $this->assertStringContainsString('ledger.xlsx', $summary);
+            $this->assertStringContainsString('Verified', $summary);
+        } finally {
+            @unlink($path);
+        }
+    }
+
+    public function test_summary_rows_carry_the_context(): void
+    {
+        $rows = (new ResultExporter)->summaryRows($this->reviewed(), new ExportContext(currency: 'GBP', balance: ['status' => 'inconsistent', 'message' => 'Differs by 49.00.']));
+        $byLabel = array_column($rows, 1, 0);
+
+        $this->assertSame('GBP', $byLabel['Currency (amounts are never converted)']);
+        $this->assertSame('Inconsistent', $byLabel['Statement balance check']);
+        $this->assertSame('Differs by 49.00.', $byLabel['Statement balance details']);
+        $this->assertStringContainsString('not an accuracy score', $byLabel['Note']);
     }
 
     public function test_xlsx_export_is_readable_and_contains_no_formula(): void

@@ -258,6 +258,10 @@ serveur (libellés, raisons, actions autorisées).
 
 CSV et XLSX : une ligne par transaction liée — statut final, statut moteur, sous-type,
 décision humaine, lignes relevé/ledger (originaux), écart, raisons. Aucun matching à l'export.
+Le classeur XLSX contient trois feuilles : _Results_ (toutes les lignes, filtres et en-tête
+figé), _To review_ (uniquement les éléments encore ouverts, la liste de travail) et _Summary_
+(fichiers, devise, contrôle du solde, chiffres du moteur, décisions humaines séparées, montants
+par catégorie sans total trompeur). Une colonne _Currency_ figure dans les deux formats.
 
 ## 14. Tests
 
