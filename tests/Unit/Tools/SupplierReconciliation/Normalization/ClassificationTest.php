@@ -51,5 +51,20 @@ class ClassificationTest extends TestCase
         $this->assertFalse($detector->isBalanceLine(['INV-123', 'Invoice']));
         $this->assertFalse($detector->isBalanceLine(['Balance adjustment INV-12']));
         $this->assertFalse($detector->isBalanceLine([null, '']));
+        $this->assertTrue($detector->isBalanceLine(['Sous-total page']));
+        $this->assertTrue($detector->isBalanceLine(['Sub-total']));
+        $this->assertTrue($detector->isBalanceLine(['À reporter']));
+        $this->assertTrue($detector->isBalanceLine(['Amount Due']));
+        $this->assertFalse($detector->isBalanceLine(['Total for ACME Ltd']));
+    }
+
+    public function test_group_totals_are_recognised_separately(): void
+    {
+        $detector = new BalanceLineDetector;
+
+        $this->assertTrue($detector->isGroupTotal(['Total for Pacific Paper Co.']));
+        $this->assertTrue($detector->isGroupTotal([null, 'Total pour BRICOMAT']));
+        $this->assertFalse($detector->isGroupTotal(['Total']));
+        $this->assertFalse($detector->isGroupTotal(['Totally new product']));
     }
 }

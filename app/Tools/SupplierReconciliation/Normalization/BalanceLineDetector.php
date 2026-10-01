@@ -12,10 +12,11 @@ final class BalanceLineDetector
     private const PATTERN = '/^\s*(
         (opening|closing|previous|current|account|outstanding)\s+balance
         | balance\s*(b\/?f|c\/?f|brought\s+forward|carried\s+forward|forward|due|outstanding)?
-        | (sub\s*)?totals?(\s+(due|outstanding|balance|amount|to\s+pay))?
+        | (sub[\s-]*|sous[\s-]*)?totals?(\s+(page|due|outstanding|balance|amount|to\s+pay))?
         | amount\s+due
         | solde(\s+(initial|final|ant[ée]rieur|pr[ée]c[ée]dent|report[ée]|[àa]\s+payer|d[ûu]))?
         | report(\s+[àa]\s+nouveau)?
+        | [àa]\s+reporter
         | a\s+nouveau
         | total\s+[àa]\s+payer
     )\s*[:.]?\s*$/xiu';

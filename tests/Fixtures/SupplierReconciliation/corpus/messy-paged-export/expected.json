@@ -1,0 +1,31 @@
+{
+    "description": "Paged print-to-text statement: tab-separated, Windows-1252, dotted dates (02.09.2026), '1.284,00' amounts, company and page lines, the header printed again on page 2, a page subtotal and a final total; Windows-1252 semicolon ledger.",
+    "currency": "EUR",
+    "balance": "verified",
+    "pairs": [
+        [[5], [2]],
+        [[6], [3]],
+        [[7], [4]],
+        [[14], [5]],
+        [[15], [6]]
+    ],
+    "expect": {
+        "statement": {
+            "5": "matched",
+            "6": "matched",
+            "7": "matched",
+            "8": "excluded",
+            "13": "missing_in_ledger",
+            "14": "matched",
+            "15": "matched",
+            "16": "excluded"
+        },
+        "ledger": {
+            "7": "ledger_only"
+        }
+    },
+    "notes": {
+        "statement 12": "Header printed again after the page break: ignored as a repeated header, never a transaction.",
+        "statement 8": "Page subtotal between transactions: set aside and not counted in the balance check."
+    }
+}

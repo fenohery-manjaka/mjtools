@@ -29,7 +29,7 @@ final class ColumnDetector
         'balance' => '/\b(balance|solde|running|cumul|outstanding)\b/iu',
         'reference' => '/\b(ref|reference|référence|invoice|inv|document|doc|no|nº|n°|number|num|numéro|facture|pièce|piece|voucher|external)\b/iu',
         'type' => '/\b(type|nature|kind|doc(ument)? type|transaction type|trans type)\b/iu',
-        'description' => '/\b(description|libellé|libelle|details|memo|narrative|text|label|comment|particulars)\b/iu',
+        'description' => '/\b(description|libellé|libelle|désignation|designation|details|memo|narrative|text|label|comment|particulars)\b/iu',
         'supplier' => '/\b(supplier|vendor|fournisseur|creditor|tiers|payee|account name)\b/iu',
         'currency' => '/^\s*(currency|curr\.?|ccy|cur|devise|monnaie|currency code)\s*$/iu',
     ];

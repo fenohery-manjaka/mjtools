@@ -1,0 +1,29 @@
+{
+    "description": "UK SaaS supplier: XLSX statement with title rows, real dates, an 'Amount £' header and a monthly subscription of the same amount with sequential numbers; Xero-like CSV ledger with debit/credit and running balance. One invoice number is mistyped in the ledger, one month is missing and the closing balance does not add up.",
+    "currency": "GBP",
+    "balance": "inconsistent",
+    "pairs": [
+        [[6], [2]],
+        [[7], [3]],
+        [[8], [4]],
+        [[9], [5]],
+        [[11], [6]]
+    ],
+    "expect": {
+        "statement": {
+            "6": "matched",
+            "7": "matched",
+            "8": "possible_match",
+            "9": "matched",
+            "10": "missing_in_ledger",
+            "11": "possible_match",
+            "12": "missing_in_ledger",
+            "13": "excluded"
+        }
+    },
+    "notes": {
+        "statement 8 / ledger 4": "INV-2026-0108 entered as INV-2026-0180 on a recurring 49.00: a typo must never be matched automatically.",
+        "statement 12": "The September invoice of the same recurring amount is missing: it must not be paired with another month.",
+        "balance": "Balance due 24.00 while the listed lines add up to 73.00: reported as inconsistent, never blocking."
+    }
+}

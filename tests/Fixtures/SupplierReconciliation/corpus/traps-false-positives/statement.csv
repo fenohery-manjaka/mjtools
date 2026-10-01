@@ -1,0 +1,13 @@
+Reference,Date,Description,Amount
+INV-100,2026-08-12,Small order,250.00
+INV-2001,2026-08-03,Annual maintenance 2026,500.00
+CN-3001,2026-08-14,Credit for damaged goods,-80.00
+INV-4001,2026-08-18,Batch A,120.00
+INV-4002,2026-08-18,Batch B,120.00
+INV-5001,2026-08-20,Fittings,300.00
+PAYMENT,2026-08-22,Payment received,-1000.00
+INV-7001,2026-08-24,Generator rental,1000.00
+INV-8001,2026-08-31,Scaffolding,640.00
+INV-9001,2026-08-25,Cable drum,200.00
+INV-9001,2026-08-25,Cable drum,200.00
+INV-1010,2026-08-26,Valves,410.00

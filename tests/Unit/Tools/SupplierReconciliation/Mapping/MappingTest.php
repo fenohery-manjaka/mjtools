@@ -188,6 +188,18 @@ class MappingTest extends TestCase
         $this->assertSame('100.00', $built->runningBalances[3]->toDecimal());
     }
 
+    public function test_headers_repeated_after_a_page_break_are_ignored(): void
+    {
+        $table = $this->table("Date,Ref,Description,Amount\n01/09/2026,INV-1,Bricks,100.00\nDate,Ref,Description,Amount\n02/09/2026,INV-2,Sand,50.00\n");
+        $mapping = new ColumnMapping(0, ['date' => 0, 'reference' => 1, 'description' => 2, 'amount' => 3]);
+
+        $built = (new TransactionBuilder)->build($table, $mapping, Side::Statement);
+
+        $this->assertCount(2, $built->transactions);
+        $this->assertSame(1, $built->ignoredTextRows);
+        $this->assertSame([], $built->rowIssues);
+    }
+
     public function test_builder_reports_unreadable_values(): void
     {
         $table = $this->table("Ref,Date,Amount\nINV-1,31/02/2026,abc\n");

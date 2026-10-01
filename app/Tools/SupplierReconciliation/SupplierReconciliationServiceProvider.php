@@ -2,6 +2,7 @@
 
 namespace App\Tools\SupplierReconciliation;
 
+use App\Tools\SupplierReconciliation\Corpus\CorpusReport;
 use App\Tools\SupplierReconciliation\Import\FileImporter;
 use App\Tools\SupplierReconciliation\Import\ImportLimits;
 use App\Tools\SupplierReconciliation\Interest\InterestReport;
@@ -49,7 +50,7 @@ class SupplierReconciliationServiceProvider extends ServiceProvider
             ->group(__DIR__.'/routes.php');
 
         if ($this->app->runningInConsole()) {
-            $this->commands([PurgeExpiredRuns::class, InterestReport::class]);
+            $this->commands([PurgeExpiredRuns::class, InterestReport::class, CorpusReport::class]);
         }
 
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {

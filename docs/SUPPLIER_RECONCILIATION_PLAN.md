@@ -139,6 +139,8 @@ Fichier ─► Import (RawTable) ─► détection en-têtes + mapping proposé 
   la ligne de solde précédant la première transaction (zéro sinon) et la dernière ligne de solde
   suivant la dernière transaction. Résultat : vérifié, incohérent (écart affiché, simple
   avertissement) ou indisponible (pas de solde de clôture, montant illisible). Jamais bloquant.
+  Une colonne de solde progressif (Running balance) facultative fournit les soldes lorsqu'ils ne
+  sont pas dans les colonnes de montant, ou encadre la période en l'absence de lignes de solde.
   Le rapprochement des soldes relevé/ledger reste une évolution possible.
 - Contrôle avant analyse : lignes par fichier, champs ✓, lignes illisibles, conventions
   appliquées, **suggestion d'inversion de signe** si les références communes ont
@@ -268,6 +270,12 @@ décision humaine, lignes relevé/ledger (originaux), écart, raisons. Aucun mat
 - Revue / export.
 - Feature : parcours HTTP complet, isolation par session, erreurs d'upload, purge.
 - Architecture : le moteur n'importe ni Illuminate, ni Inertia, ni OpenSpout.
+- **Corpus de fichiers étiquetés** (`tests/Fixtures/SupplierReconciliation/corpus`) : chaque cas
+  contient un relevé, un ledger et `expected.json` (vraies paires par numéro de ligne, statuts
+  attendus, statut du contrôle de solde). `Corpus/CorpusRunner` les fait passer par le même chemin
+  que le produit, sans correction humaine ; `CorpusTest` exige zéro faux auto-match et
+  `php artisan supplier-reconciliation:corpus [dossier]` mesure un corpus, y compris de vrais
+  fichiers anonymisés rangés au même format hors du dépôt.
 
 ## 15. Ordre de livraison à partir de l'état actuel
 

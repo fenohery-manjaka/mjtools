@@ -50,6 +50,13 @@ final class TransactionBuilder
                 continue;
             }
 
+            // Paged exports print the header row again on every page.
+            if ($this->repeatsHeader($row['cells'], $table->headers)) {
+                $ignored++;
+
+                continue;
+            }
+
             $isBalanceLine = $this->isBalanceLine($original, $row['cells']);
 
             if (! $isBalanceLine && $this->isFreeText($original, $mapping)) {
@@ -151,6 +158,34 @@ final class TransactionBuilder
             amountNotes: $notes,
             isBalanceLine: $isBalanceLine,
         );
+    }
+
+    /**
+     * A row whose filled cells are exactly the column headers, at the same
+     * places, is the header printed again (page break), not a transaction.
+     *
+     * @param  list<string>  $cells
+     * @param  list<string>  $headers
+     */
+    private function repeatsHeader(array $cells, array $headers): bool
+    {
+        $filled = 0;
+
+        foreach ($cells as $index => $cell) {
+            $value = mb_strtolower(trim($cell));
+
+            if ($value === '') {
+                continue;
+            }
+
+            if ($value !== mb_strtolower(trim($headers[$index] ?? ''))) {
+                return false;
+            }
+
+            $filled++;
+        }
+
+        return $filled >= 2;
     }
 
     /**
