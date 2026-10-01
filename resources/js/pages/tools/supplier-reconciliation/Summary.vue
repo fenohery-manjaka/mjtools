@@ -5,15 +5,24 @@ import { computed } from 'vue';
 import { Button } from '@/components/ui/button';
 import { exportMethod, review } from '@/routes/supplier-reconciliation';
 import DeleteRunButton from '@/tools/supplier-reconciliation/components/DeleteRunButton.vue';
+import BalanceStatus from '@/tools/supplier-reconciliation/components/BalanceStatus.vue';
 import StepNav from '@/tools/supplier-reconciliation/components/StepNav.vue';
 import {
     dotClasses,
     edgeClasses,
     toneOf,
 } from '@/tools/supplier-reconciliation/tones';
-import type { Run, Summary } from '@/tools/supplier-reconciliation/types';
+import type {
+    BalanceResult,
+    Run,
+    Summary,
+} from '@/tools/supplier-reconciliation/types';
 
-const props = defineProps<{ run: Run; summary: Summary }>();
+const props = defineProps<{
+    run: Run;
+    summary: Summary;
+    balance: BalanceResult | null;
+}>();
 
 const categories = computed(() => {
     const counts = props.summary.engine_counts;
@@ -320,6 +329,13 @@ const clearedWidth = computed(
             </div>
         </section>
     </div>
+
+    <BalanceStatus
+        v-if="balance"
+        class="mt-6"
+        :balance="balance"
+        :currency="run.currency"
+    />
 
     <section
         class="border-primary/20 bg-accent/50 mt-6 rounded-xl border p-6 sm:p-8"

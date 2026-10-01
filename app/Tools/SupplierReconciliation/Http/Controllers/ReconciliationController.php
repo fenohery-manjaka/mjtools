@@ -5,6 +5,7 @@ namespace App\Tools\SupplierReconciliation\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Tools\SupplierReconciliation\Domain\Side;
 use App\Tools\SupplierReconciliation\Http\Presenters\RunPresenter;
+use App\Tools\SupplierReconciliation\Mapping\BalanceCheck;
 use App\Tools\SupplierReconciliation\Mapping\PreflightCheck;
 use App\Tools\SupplierReconciliation\Mapping\PreparedSide;
 use App\Tools\SupplierReconciliation\Matching\ReconciliationEngine;
@@ -87,9 +88,12 @@ class ReconciliationController extends Controller
             return to_route('supplier-reconciliation.check', $run);
         }
 
+        $statement = $run->prepared(Side::Statement);
+
         return Inertia::render('tools/supplier-reconciliation/Summary', [
             'run' => $this->presenter->run($run),
             'summary' => $reviewed->summary(),
+            'balance' => $statement === null ? null : (new BalanceCheck)->check($statement->built->transactions),
         ]);
     }
 

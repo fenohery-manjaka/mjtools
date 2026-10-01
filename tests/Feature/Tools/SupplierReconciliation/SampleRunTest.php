@@ -42,13 +42,16 @@ class SampleRunTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->where('report.ready', true)
                 ->where('report.blocking', [])
-                ->where('report.sides.statement.ignored_text_rows', 1));
+                ->where('report.sides.statement.ignored_text_rows', 1)
+                ->where('report.balance.status', 'verified')
+                ->where('report.balance.closing', '6,381.00'));
 
         $this->post(route('supplier-reconciliation.reconcile', $run))
             ->assertRedirect(route('supplier-reconciliation.summary', $run));
 
         $this->get(route('supplier-reconciliation.summary', $run))
             ->assertInertia(fn (Assert $page) => $page
+                ->where('balance.status', 'verified')
                 ->where('summary.excluded_lines', 2)
                 ->where('summary.matched_automatically.items', 6)
                 ->where('summary.engine_counts.possible_match', 1)

@@ -21,11 +21,12 @@ final class PreflightCheck
     public function __construct(
         private readonly FormatDetector $formats = new FormatDetector,
         private readonly CurrencyCheck $currencies = new CurrencyCheck,
+        private readonly BalanceCheck $balance = new BalanceCheck,
     ) {}
 
     /**
      * @param  ?string  $currency  Currency confirmed for the reconciliation; null while not confirmed.
-     * @return array{ready: bool, blocking: list<string>, warnings: list<string>, sides: array<string, array<string, mixed>>, suggest_inverting_ledger_sign: bool, currency: ?string}
+     * @return array{ready: bool, blocking: list<string>, warnings: list<string>, sides: array<string, array<string, mixed>>, suggest_inverting_ledger_sign: bool, currency: ?string, balance: array<string, ?string>}
      */
     public function check(PreparedSide $statement, PreparedSide $ledger, ?string $currency): array
     {
@@ -44,6 +45,13 @@ final class PreflightCheck
             $sides[$prepared->side->value] = $this->describeSide($prepared);
         }
 
+        // Optional and informative: an inconsistent balance never blocks the reconciliation.
+        $balance = $this->balance->check($statement->built->transactions);
+
+        if ($balance['status'] === BalanceCheck::INCONSISTENT) {
+            $warnings[] = $balance['message'];
+        }
+
         $invertLedger = $this->signsLookInverted($statement->built->transactions, $ledger->built->transactions);
 
         if ($invertLedger) {
@@ -57,6 +65,7 @@ final class PreflightCheck
             'sides' => $sides,
             'suggest_inverting_ledger_sign' => $invertLedger,
             'currency' => $currency,
+            'balance' => $balance,
         ];
     }
 

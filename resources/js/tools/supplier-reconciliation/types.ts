@@ -101,6 +101,17 @@ export type PreflightReport = {
     sides: Record<Side, SideReport>;
     suggest_inverting_ledger_sign: boolean;
     currency: string | null;
+    balance: BalanceResult;
+};
+
+export type BalanceResult = {
+    status: 'verified' | 'inconsistent' | 'unavailable';
+    opening: string | null;
+    movements: string | null;
+    expected: string | null;
+    closing: string | null;
+    difference: string | null;
+    message: string;
 };
 
 export type AmountTotal = { count: number; total: string };

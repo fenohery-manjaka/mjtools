@@ -12,6 +12,7 @@ import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { reconcile, summary } from '@/routes/supplier-reconciliation';
 import { edit as mappingEdit } from '@/routes/supplier-reconciliation/mapping';
+import BalanceStatus from '@/tools/supplier-reconciliation/components/BalanceStatus.vue';
 import PageHeading from '@/tools/supplier-reconciliation/components/PageHeading.vue';
 import StepNav from '@/tools/supplier-reconciliation/components/StepNav.vue';
 import type {
@@ -150,6 +151,12 @@ const fieldLabels: Record<string, string> = {
             </details>
         </section>
     </div>
+
+    <BalanceStatus
+        class="mt-6"
+        :balance="report.balance"
+        :currency="report.currency"
+    />
 
     <div
         v-if="report.blocking.length"
