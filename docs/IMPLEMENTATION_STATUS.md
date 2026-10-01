@@ -60,7 +60,7 @@ encore ni clients, ni fournisseurs, ni mappings sauvegardés, ni historique comm
 | Filtre fournisseur                              | ✅   | Disponible si la colonne est mappée                                                                                                                                                                                                          |
 | Fichiers imparfaits courants                    | 🟡   | Corpus de 5 cas fichiers (FR/Sage, US/QuickBooks, UK/Xero, export paginé, pièges) ; corrigés : Charges/Payments, Amount Due, « Total for … », en-têtes répétés, Désignation, pied de page texte ; fichiers réels anonymisés encore à ajouter |
 | Choix de feuille XLSX                           | ✅   | Feuille la plus proche d'une liste de transactions par défaut (page de garde ignorée) ; autre feuille au choix en redéposant le fichier (jamais conservé)                                                                                    |
-| Référence secondaire                            | 🔴   | Une seule colonne actuellement                                                                                                                                                                                                               |
+| Référence secondaire                            | 🟡   | La colonne référence est choisie par recoupement avec l'autre fichier (n° interne vs n° fournisseur) et signalée au contrôle ; une seule colonne est encore utilisée à la fois                                                               |
 | Devise unique et garde-fous                     | ✅   | Détectée (codes, symboles, en-tête, colonne Currency), confirmée à l'étape Columns ; toute autre devise bloque ; jamais de conversion ; colonne Currency à l'export                                                                          |
 | Contrôle facultatif du solde                    | ✅   | Relevé : solde d'ouverture + lignes = solde de clôture → vérifié / incohérent (écart affiché, avertissement non bloquant) / indisponible ; `BalanceCheckTest`                                                                                |
 | PDF texte / OCR                                 | ⏸️   | Périmètre C après validation                                                                                                                                                                                                                 |
@@ -80,7 +80,7 @@ encore ni clients, ni fournisseurs, ni mappings sauvegardés, ni historique comm
 | Avoirs, paiements et signes opposés      | ✅   | Couverts par le moteur et les tests                                                                                                                        |
 | Éléments absents et timing difference    | ✅   | Missing in Ledger / Ledger Only                                                                                                                            |
 | Explications détaillées                  | ✅   | Raisons, comparaisons et transformations                                                                                                                   |
-| Corpus réaliste suffisamment diversifié  | 🟡   | 5 cas étiquetés, 82 lignes, 0 faux auto-match (`CorpusTest`, `php artisan supplier-reconciliation:corpus`) ; à enrichir avec des fichiers réels anonymisés |
+| Corpus réaliste suffisamment diversifié  | 🟡   | 6 cas étiquetés, 96 lignes, 0 faux auto-match (`CorpusTest`, `php artisan supplier-reconciliation:corpus`) ; à enrichir avec des fichiers réels anonymisés |
 | Benchmark contre Excel/IA généraliste    | 🔴   | À créer pour mesurer l'avantage réel                                                                                                                       |
 
 ## D. Parcours et résultats
@@ -185,6 +185,7 @@ Ces chiffres doivent être remplacés par le prochain résultat complet, pas sim
 
 | Date       | Changement                                                                                                | Preuve                                                               |
 | ---------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| 2026-10-02 | Colonne référence choisie par recoupement ; solde progressif validé avant usage                           | `ReferenceColumnAdvisorTest`, corpus Business Central ; 297/297      |
 | 2026-10-02 | Choix de la feuille XLSX (automatique + manuel)                                                           | `FileImporterTest`, `ReconciliationFlowTest` ; 290/290               |
 | 2026-10-02 | Export XLSX renforcé : liste « To review », synthèse avec contexte, mise en forme                         | `ResultExporterTest`                                                 |
 | 2026-10-02 | Corpus étiqueté de fichiers réalistes + mesure (`supplier-reconciliation:corpus`) et corrections révélées | `CorpusTest` ; 284/284 ; 0 faux auto-match                           |

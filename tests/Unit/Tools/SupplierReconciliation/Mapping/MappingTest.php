@@ -148,7 +148,7 @@ class MappingTest extends TestCase
 
     public function test_charges_and_payments_columns_are_read_as_debit_and_credit(): void
     {
-        $table = $this->table("Date,Invoice #,Description,Charges,Payments,Balance\n09/03/2026,10457,Paper,\"$1,240.00\",,\"$1,240.00\"\n09/08/2026,,Payment,,\"$1,000.00\",$240.00\n");
+        $table = $this->table("Date,Invoice #,Description,Charges,Payments,Balance\n09/03/2026,10457,Paper,\"$1,240.00\",,\"$1,240.00\"\n09/08/2026,,Payment,,\"$1,000.00\",$240.00\n09/12/2026,10471,Toner,$918.60,,\"$1,158.60\"\n");
 
         foreach ([Side::Statement, Side::Ledger] as $side) {
             $mapping = (new ColumnDetector)->suggest($table, $side, 0);

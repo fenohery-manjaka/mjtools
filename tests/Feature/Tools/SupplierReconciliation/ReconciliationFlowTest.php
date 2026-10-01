@@ -55,9 +55,12 @@ class ReconciliationFlowTest extends TestCase
 
     private function startRun(): ReconciliationRun
     {
-        $this->post(route('supplier-reconciliation.runs.store'))->assertRedirect();
+        $location = (string) $this->post(route('supplier-reconciliation.runs.store'))->assertRedirect()->headers->get('Location');
 
-        return ReconciliationRun::query()->latest()->firstOrFail();
+        // The run created by this request, even when several share the same second.
+        preg_match('#/runs/([0-9a-z]+)/#i', $location, $match);
+
+        return ReconciliationRun::query()->findOrFail($match[1] ?? '');
     }
 
     /**
@@ -328,6 +331,28 @@ class ReconciliationFlowTest extends TestCase
 
         $this->post(route('supplier-reconciliation.files.store', [$run, 'statement']), ['file' => $workbook(), 'sheet' => 'October'])
             ->assertSessionHasErrors(['file' => 'The workbook has no sheet with this name. Choose one of its sheets.']);
+    }
+
+    public function test_the_reference_column_follows_the_other_file_whatever_the_upload_order(): void
+    {
+        $ledger = fn (): UploadedFile => new UploadedFile(Files::text("Document No.,External Document No.,Posting Date,Amount\nPI-001842,KIS-24581,03/09/2026,100.00\nPI-001851,KIS-24597,06/09/2026,50.00\nPI-001866,KIS24612,10/09/2026,20.00\n"), 'ledger.csv', 'text/csv', null, true);
+        $statement = fn (): UploadedFile => new UploadedFile(Files::text("Invoice No,Date,Amount\nKIS-24581,02/09/2026,100.00\nKIS-24597,05/09/2026,50.00\nKIS-24612,09/09/2026,20.00\n"), 'statement.csv', 'text/csv', null, true);
+
+        // Ledger first: nothing to compare with yet, then revisited when the statement arrives.
+        $run = $this->startRun();
+        $this->post(route('supplier-reconciliation.files.store', [$run, 'ledger']), ['file' => $ledger()]);
+        $this->assertSame(0, $run->refresh()->ledger_mapping['columns']['reference']);
+        $this->post(route('supplier-reconciliation.files.store', [$run, 'statement']), ['file' => $statement()]);
+        $this->assertSame(1, $run->refresh()->ledger_mapping['columns']['reference']);
+
+        // A mapping changed by the user is left alone.
+        $run = $this->startRun();
+        $this->post(route('supplier-reconciliation.files.store', [$run, 'ledger']), ['file' => $ledger()]);
+        $mapping = $run->refresh()->ledger_mapping;
+        $mapping['decimal_separator'] = 'comma';
+        $run->forceFill(['ledger_mapping' => $mapping])->save();
+        $this->post(route('supplier-reconciliation.files.store', [$run, 'statement']), ['file' => $statement()]);
+        $this->assertSame(0, $run->refresh()->ledger_mapping['columns']['reference']);
     }
 
     public function test_the_user_can_delete_their_data(): void

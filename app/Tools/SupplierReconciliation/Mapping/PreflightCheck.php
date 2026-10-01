@@ -22,6 +22,7 @@ final class PreflightCheck
         private readonly FormatDetector $formats = new FormatDetector,
         private readonly CurrencyCheck $currencies = new CurrencyCheck,
         private readonly BalanceCheck $balance = new BalanceCheck,
+        private readonly ReferenceColumnAdvisor $references = new ReferenceColumnAdvisor,
     ) {}
 
     /**
@@ -43,6 +44,16 @@ final class PreflightCheck
             $blocking = [...$blocking, ...$sideBlocking, ...$this->currencies->problems($prepared, $currency)];
             $warnings = [...$warnings, ...$sideWarnings];
             $sides[$prepared->side->value] = $this->describeSide($prepared);
+        }
+
+        foreach ([[$statement, $ledger], [$ledger, $statement]] as [$prepared, $other]) {
+            $better = $this->references->better($prepared->table, $prepared->mapping, $other->built->transactions);
+
+            if ($better !== null) {
+                $name = $prepared->side === Side::Statement ? 'supplier statement' : 'ledger';
+                $otherName = $prepared->side === Side::Statement ? 'ledger' : 'supplier statement';
+                $warnings[] = "In the {$name}, the column \"{$prepared->table->headers[$better['column']]}\" shares {$better['shared']} references with the {$otherName}, the Reference column only {$better['current']}: it is probably the right Reference column.";
+            }
         }
 
         // Optional and informative: an inconsistent balance never blocks the reconciliation.

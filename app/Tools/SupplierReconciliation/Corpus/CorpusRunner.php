@@ -11,6 +11,7 @@ use App\Tools\SupplierReconciliation\Mapping\ColumnMapping;
 use App\Tools\SupplierReconciliation\Mapping\CurrencyCheck;
 use App\Tools\SupplierReconciliation\Mapping\PreflightCheck;
 use App\Tools\SupplierReconciliation\Mapping\PreparedSide;
+use App\Tools\SupplierReconciliation\Mapping\ReferenceColumnAdvisor;
 use App\Tools\SupplierReconciliation\Matching\ReconciliationEngine;
 use App\Tools\SupplierReconciliation\Result\ItemStatus;
 use App\Tools\SupplierReconciliation\Result\ReconciliationResult;
@@ -60,6 +61,17 @@ final class CorpusRunner
 
         $statement = $this->prepare(Side::Statement, $this->file($dir, 'statement'), $expected['mapping']['statement'] ?? []);
         $ledger = $this->prepare(Side::Ledger, $this->file($dir, 'ledger'), $expected['mapping']['ledger'] ?? []);
+
+        // As in the product: the ledger is compared with the statement, then the statement with it.
+        $advisor = new ReferenceColumnAdvisor;
+
+        if (! isset($expected['mapping']['ledger'])) {
+            $ledger = PreparedSide::prepare(Side::Ledger, $ledger->table, $advisor->improve($ledger->table, $ledger->mapping, $statement->built->transactions));
+        }
+
+        if (! isset($expected['mapping']['statement'])) {
+            $statement = PreparedSide::prepare(Side::Statement, $statement->table, $advisor->improve($statement->table, $statement->mapping, $ledger->built->transactions));
+        }
         $report = (new PreflightCheck)->check($statement, $ledger, $expected['currency'] ?? null);
 
         return [

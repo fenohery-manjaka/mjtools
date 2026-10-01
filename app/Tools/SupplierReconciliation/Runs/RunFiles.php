@@ -9,6 +9,8 @@ use App\Tools\SupplierReconciliation\Import\ImportedTable;
 use App\Tools\SupplierReconciliation\Import\ImportException;
 use App\Tools\SupplierReconciliation\Import\RawTable;
 use App\Tools\SupplierReconciliation\Mapping\ColumnDetector;
+use App\Tools\SupplierReconciliation\Mapping\PreparedSide;
+use App\Tools\SupplierReconciliation\Mapping\ReferenceColumnAdvisor;
 
 /**
  * Attaches an imported file to a run: extracted cells, detected header row
@@ -16,7 +18,10 @@ use App\Tools\SupplierReconciliation\Mapping\ColumnDetector;
  */
 final class RunFiles
 {
-    public function __construct(private readonly FileImporter $importer) {}
+    public function __construct(
+        private readonly FileImporter $importer,
+        private readonly ReferenceColumnAdvisor $advisor = new ReferenceColumnAdvisor,
+    ) {}
 
     /**
      * @throws ImportException
@@ -26,7 +31,15 @@ final class RunFiles
         $raw = $this->importer->import($path, $sheet);
 
         $headerIndex = (new HeaderDetector)->detect($raw);
-        $mapping = (new ColumnDetector)->suggest(ImportedTable::fromRaw($raw, $headerIndex), $side, $headerIndex);
+        $table = ImportedTable::fromRaw($raw, $headerIndex);
+        $mapping = (new ColumnDetector)->suggest($table, $side, $headerIndex);
+        $otherSide = $side === Side::Statement ? Side::Ledger : Side::Statement;
+        $other = $run->prepared($otherSide);
+
+        // The other file tells which column holds the references it uses.
+        if ($other !== null) {
+            $mapping = $this->advisor->improve($table, $mapping, $other->built->transactions);
+        }
 
         $prefix = $side->value;
         $run->{"{$prefix}_file"} = [
@@ -40,9 +53,37 @@ final class RunFiles
         ];
         $run->{"{$prefix}_table"} = $raw->toArray();
         $run->{"{$prefix}_mapping"} = $mapping->toArray();
+
+        if ($other !== null) {
+            $this->revisitOther($run, $otherSide, PreparedSide::prepare($side, $table, $mapping));
+        }
+
         $run->discardResult();
         $run->save();
 
         return $raw;
+    }
+
+    /**
+     * The file uploaded first had no other file to compare with: its
+     * reference column is reconsidered, unless the user already changed its
+     * mapping.
+     */
+    private function revisitOther(ReconciliationRun $run, Side $side, PreparedSide $new): void
+    {
+        $other = $run->prepared($side);
+        $raw = $run->rawTable($side);
+
+        if ($other === null || $raw === null) {
+            return;
+        }
+
+        $detected = (new ColumnDetector)->suggest($other->table, $side, $other->mapping->headerIndex);
+
+        if ($detected->toArray() !== $other->mapping->toArray()) {
+            return;
+        }
+
+        $run->{"{$side->value}_mapping"} = $this->advisor->improve($other->table, $other->mapping, $new->built->transactions)->toArray();
     }
 }

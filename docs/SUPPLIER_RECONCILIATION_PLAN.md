@@ -131,6 +131,12 @@ Fichier ─► Import (RawTable) ─► détection en-têtes + mapping proposé 
       une règle de fichier explicite et visible, jamais un ajustement ligne à ligne ;
     - option « le signe vient de la colonne Type » quand les avoirs sont listés en positif.
 - Filtre fournisseur optionnel si le ledger contient plusieurs fournisseurs.
+- **Colonne référence par recoupement** : quand un fichier contient un numéro interne et le
+  numéro du fournisseur, `ReferenceColumnAdvisor` propose la colonne qui partage nettement plus de
+  références avec l'autre fichier (au moins 2 et deux fois plus que la colonne actuelle). Appliqué
+  à l'import (et au premier fichier tant que son mapping n'a pas été modifié), signalé au contrôle
+  avant analyse sinon. Une colonne Running balance n'est proposée que si ses variations suivent les
+  montants des lignes.
 - **Devise unique** (A2) : `CurrencyDetector` lit les codes ISO et symboles des montants, une
   colonne Currency optionnelle et l'en-tête de la colonne montant (« Amount (GBP) ») ; un symbole
   ambigu (`$`) reste compatible avec plusieurs codes. La devise est proposée puis confirmée pour
@@ -351,7 +357,8 @@ par catégorie sans total trompeur). Une colonne _Currency_ figure dans les deux
   `supplier_reconciliation_interest`, sans lien avec un rapprochement ni donnée comptable.
   Synthèse : `php artisan supplier-reconciliation:interest`. Rien n'est vendu à ce stade.
 - Limites connues :
-    - une seule colonne de référence par fichier (pas de « référence externe » secondaire) ;
+    - une seule colonne de référence utilisée à la fois (choisie par recoupement, pas de
+      comparaison simultanée de deux colonnes) ;
     - « formatting » considère `INV-12-3` et `INV-123` comme identiques (séparateurs ignorés) ;
     - pas de multi-devises, pas de XLS ;
     - seuils de dates non encore calibrés sur des données réelles.

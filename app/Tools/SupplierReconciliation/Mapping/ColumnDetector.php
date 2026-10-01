@@ -2,6 +2,7 @@
 
 namespace App\Tools\SupplierReconciliation\Mapping;
 
+use App\Tools\SupplierReconciliation\Domain\Amount;
 use App\Tools\SupplierReconciliation\Domain\DocumentType;
 use App\Tools\SupplierReconciliation\Domain\Side;
 use App\Tools\SupplierReconciliation\Import\ImportedTable;
@@ -144,6 +145,11 @@ final class ColumnDetector
             decimalSeparator: $separator,
         );
 
+        // "Outstanding" or "Remaining" per document is not a running balance.
+        if (isset($columns[Field::Balance->value]) && ! $this->behavesAsRunningBalance($table, $mapping)) {
+            unset($columns[Field::Balance->value]);
+        }
+
         return new ColumnMapping(
             headerIndex: $headerIndex,
             columns: $columns,
@@ -153,6 +159,64 @@ final class ColumnDetector
             dateOrder: $dateOrder,
             decimalSeparator: $separator,
         );
+    }
+
+    /**
+     * A running balance changes by the amount of each line. Checked on the
+     * sample, in absolute value so that any sign convention passes.
+     */
+    private function behavesAsRunningBalance(ImportedTable $table, ColumnMapping $mapping): bool
+    {
+        $balanceColumn = $mapping->column(Field::Balance);
+
+        if ($balanceColumn === null) {
+            return false;
+        }
+
+        $previous = null;
+        $comparable = 0;
+        $consistent = 0;
+
+        foreach (array_slice($table->rows, 0, self::SAMPLE_ROWS) as $row) {
+            $balance = $this->amounts->parse($row['cells'][$balanceColumn] ?? '', $mapping->decimalSeparator)->amount;
+            $amount = $this->lineAmount($row['cells'], $mapping);
+
+            if ($balance === null) {
+                continue;
+            }
+
+            if ($previous !== null && $amount !== null && ! $amount->isZero()) {
+                $comparable++;
+                $consistent += $balance->minus($previous)->abs()->equals($amount->abs()) ? 1 : 0;
+            }
+
+            $previous = $balance;
+        }
+
+        return $comparable >= 2 && $consistent / $comparable >= 0.6;
+    }
+
+    /**
+     * @param  list<string>  $cells
+     */
+    private function lineAmount(array $cells, ColumnMapping $mapping): ?Amount
+    {
+        if ($mapping->amountMode === AmountMode::Signed) {
+            $column = $mapping->column(Field::Amount);
+
+            return $column === null ? null : $this->amounts->parse($cells[$column] ?? '', $mapping->decimalSeparator)->amount;
+        }
+
+        $debit = $mapping->column(Field::Debit);
+        $credit = $mapping->column(Field::Credit);
+        $debitAmount = $debit === null ? null : $this->amounts->parse($cells[$debit] ?? '', $mapping->decimalSeparator)->amount;
+        $creditAmount = $credit === null ? null : $this->amounts->parse($cells[$credit] ?? '', $mapping->decimalSeparator)->amount;
+
+        if ($debitAmount === null && $creditAmount === null) {
+            return null;
+        }
+
+        return ($debitAmount ?? Amount::fromUnits(0))->minus($creditAmount ?? Amount::fromUnits(0));
     }
 
     /**
