@@ -22,8 +22,8 @@ return new class extends Migration
             $table->json('ledger_mapping')->nullable();
             $table->longText('result')->nullable();
             $table->json('decisions')->nullable();
-            $table->timestamp('reconciled_at')->nullable();
-            $table->timestamp('expires_at')->index();
+            $table->dateTime('reconciled_at')->nullable();
+            $table->dateTime('expires_at')->index();
             $table->timestamps();
         });
     }

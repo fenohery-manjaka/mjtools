@@ -1,7 +1,11 @@
-# Plan d'implémentation — Supplier Statement Reconciliation Checker V1
+# Plan d'implémentation — Supplier Reconciliation
 
 **Source de vérité fonctionnelle :** `docs/FUNCTIONAL_SPEC.md` (en cas de conflit, la spec gagne).
-**Portée :** V1 uniquement. Tout ce que la spec classe hors V1 (§46) est exclu.
+**État :** le cœur du périmètre A (Free Checker) est implémenté ; ce document décrit désormais sa
+finalisation puis la livraison progressive des périmètres B et C définis au §4 de la spec.
+
+**Règle de portée :** le périmètre C ne constitue jamais un prérequis à la publication du Checker ou
+à la première vente. Chaque phase doit obtenir son signal produit avant d'élargir la suivante.
 
 ---
 
@@ -15,7 +19,9 @@
 - Aucune fonctionnalité métier : c'est le starter kit Vue de Laravel.
 
 Ce socle (auth, settings, layouts, composants UI) **devient le socle partagé de mjtools** et
-n'est pas réorganisé.
+n'est pas réorganisé. `mjtools` est une plateforme générique de micro-outils indépendants ; le
+rapprochement fournisseur est son premier outil, pas le positionnement définitif de toute la
+plateforme.
 
 ## 2. Architecture globale mjtools : monolithe modulaire multi-outils
 
@@ -252,10 +258,43 @@ décision humaine, lignes relevé/ledger (originaux), écart, raisons. Aucun mat
 - Feature : parcours HTTP complet, isolation par session, erreurs d'upload, purge.
 - Architecture : le moteur n'importe ni Illuminate, ni Inertia, ni OpenSpout.
 
-## 15. Ordre d'implémentation
+## 15. Ordre de livraison à partir de l'état actuel
 
-1. Domain + Normalization (+ tests) → 2. Result + Matching (+ datasets) → 3. Import + Mapping →
-2. Review + Export → 5. Runs + HTTP + provider → 6. UI → 7. Revue finale.
+### Phase A1 — Stabiliser le Free Checker
+
+1. rendre toute la suite de tests exécutable dans l'environnement de référence ;
+2. corriger les défauts d'import, de mapping et de matching révélés par des fichiers réalistes ;
+3. constituer un corpus étiqueté de fichiers propres et imparfaits ;
+4. mesurer les faux auto-matchs, le taux de lignes éliminées et les erreurs d'import ;
+5. améliorer l'export et fournir un jeu de données d'exemple.
+
+### Phase A2 — Compléter la promesse avant publication
+
+1. ajouter une devise unique par rapprochement comme garde-fou, sans conversion ;
+2. ajouter un contrôle facultatif du solde lorsque les données le permettent ;
+3. renforcer les diagnostics de fichiers imparfaits et les contrôles avant analyse ;
+4. présenter clairement confidentialité, rétention et suppression ;
+5. instrumenter le CTA d'intention « sauvegarder ce fournisseur » sans construire tout le SaaS.
+
+### Phase B — Premier payant minimal
+
+1. compte et espace de travail ;
+2. structure simple client/fournisseur ;
+3. sauvegarde du mapping et des conventions après un rapprochement réussi ;
+4. empreinte de structure et détection de dérive avant réutilisation ;
+5. nouvelle période, reprise, historique simple et exports ;
+6. isolation, chiffrement, rétention et suppression des données persistantes ;
+7. quotas, facturation et gestion autonome de l'abonnement.
+
+### Phase C — Uniquement après validation commerciale
+
+1. batch multi-fournisseurs ;
+2. continuité des exceptions entre périodes ;
+3. dossier d'audit enrichi ;
+4. PDF texte avec validation de l'extraction ;
+5. réception par email ;
+6. OCR local si la demande le justifie ;
+7. intégrations comptables choisies à partir des usages observés.
 
 ## 16. Décisions
 
@@ -268,8 +307,12 @@ décision humaine, lignes relevé/ledger (originaux), écart, raisons. Aucun mat
 | Références non identifiantes (sans chiffre) jamais auto-rapprochées                   | `PAYMENT` ↔ `PAYMENT` n'identifie pas un document                                 |
 | Stockage en base (JSON) 24 h, pas de fichier brut conservé                            | confidentialité §40, simplicité                                                   |
 | Migrations et routes dans le module, config dans `config/supplier-reconciliation.php` | frontière d'outil réelle ; config au standard Laravel (compatible `config:cache`) |
+| Aucune API d'IA payante dans le chemin principal                                      | coût prévisible, confidentialité, reproductibilité et absence de dépendance       |
+| « Mémoire » = données structurées, pas machine learning                               | mappings, conventions et décisions sont explicitement sauvegardés                |
+| Une devise par rapprochement avant le multi-devise                                    | empêcher les comparaisons incohérentes sans introduire de conversion              |
+| Contrôle de solde facultatif                                                           | tous les relevés ne contiennent pas un solde initial et final vérifiables          |
 
-## 17. État à la fin de la V1 et limites connues
+## 17. État actuel du périmètre A et limites connues
 
 - Implémenté : tout le parcours §6–§36 (voir tests `tests/Unit/Tools/SupplierReconciliation`
   et `tests/Feature/Tools/SupplierReconciliation`).
@@ -285,3 +328,66 @@ décision humaine, lignes relevé/ledger (originaux), écart, raisons. Aucun mat
     - « formatting » considère `INV-12-3` et `INV-123` comme identiques (séparateurs ignorés) ;
     - pas de multi-devises, pas de XLS, première feuille non vide d'un XLSX seulement ;
     - seuils de dates non encore calibrés sur des données réelles.
+
+Les éléments suivants restent à finaliser avant de considérer le Checker comme prêt à publier :
+
+- exécution verte de la suite dans l'environnement de référence ;
+- validation sur un corpus de fichiers réels anonymisés ou synthétiques réalistes ;
+- devise unique et blocage des incohérences ;
+- contrôle facultatif du solde ;
+- jeu d'exemple et mesure du parcours complet ;
+- positionnement, marque et textes de l'interface à stabiliser ;
+- instrumentation du signal d'intérêt pour la sauvegarde d'un fournisseur.
+
+## 18. Architecture du premier payant minimal — périmètre B
+
+Le périmètre B étend le module sans déplacer la logique de rapprochement existante. Le moteur pur
+continue à recevoir des `Transaction`; les fonctionnalités payantes orchestrent les fichiers,
+mappings, périodes et droits d'accès autour de lui.
+
+Modèle fonctionnel minimal :
+
+```text
+Workspace
+  └── Client
+        └── Supplier
+              ├── MappingProfile + StructureFingerprint
+              └── ReconciliationPeriod
+                    └── Run + Decisions + Exports
+```
+
+Règles :
+
+- un rapprochement gratuit peut être sauvegardé au moment où l'utilisateur crée son compte ;
+- le mapping réutilisé reste une proposition : une dérive de structure impose une confirmation ;
+- la persistance payante ne réutilise pas le jeton de session anonyme comme mécanisme d'autorisation ;
+- les données d'un workspace ne sont accessibles qu'à ses membres autorisés ;
+- le résultat du moteur, la décision humaine et le statut final restent séparés ;
+- un utilisateur peut supprimer un fournisseur, un rapprochement ou son espace selon les règles de
+  rétention applicables ;
+- aucune fonction du périmètre B ne dépend d'une API d'IA externe.
+
+Le premier payant est livrable sans batch, PDF, email ni intégration comptable.
+
+## 19. Critère de passage au périmètre C
+
+Le périmètre C ne commence que si les données montrent au moins un signal commercial crédible :
+
+- utilisateurs revenant sur une nouvelle période ;
+- mappings sauvegardés effectivement réutilisés ;
+- créations de compte après un résultat réussi ;
+- intention de paiement ou premiers paiements ;
+- demande répétée et identifiable pour le batch, le PDF ou une intégration donnée.
+
+La prochaine capacité est choisie par le principal obstacle observé :
+
+- nombreux fournisseurs par utilisateur → batch ;
+- nombreux fichiers refusés car PDF → PDF texte ;
+- exceptions récurrentes difficiles à suivre → continuité des exceptions ;
+- même logiciel comptable dominant → intégration ciblée.
+
+## 20. Non-objectifs permanents ou lointains
+
+Le produit reste spécialisé dans le rapprochement et la préparation de la revue. Ne pas transformer
+le module en ERP, solution de paiement, système d'approbation de factures, outil de résolution de
+litiges, chatbot comptable ou suite Accounts Payable généraliste.
