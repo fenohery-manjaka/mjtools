@@ -49,7 +49,15 @@ const fieldLabels: Record<string, string> = {
         you start the reconciliation.
     </PageHeading>
 
-    <div class="mt-8 grid gap-6 lg:grid-cols-2">
+    <p v-if="report.currency" class="text-muted-foreground mt-6 text-sm">
+        Reconciliation currency:
+        <span class="figure text-foreground font-medium">{{
+            report.currency
+        }}</span>
+        · amounts are compared as written, never converted.
+    </p>
+
+    <div class="mt-6 grid gap-6 lg:grid-cols-2">
         <section
             v-for="entry in sides"
             :key="entry.side"
@@ -92,6 +100,23 @@ const fieldLabels: Record<string, string> = {
                     :key="convention"
                 >
                     {{ convention }}
+                </li>
+                <li v-if="report.sides[entry.side].currencies.length">
+                    Currency written in the file:
+                    <template
+                        v-for="(found, index) in report.sides[entry.side]
+                            .currencies"
+                        :key="found.label"
+                        ><template v-if="index">, </template
+                        ><span class="figure text-foreground">{{
+                            found.label
+                        }}</span>
+                        ({{
+                            found.lines === null
+                                ? 'amount header'
+                                : `${found.lines} line${found.lines === 1 ? '' : 's'}`
+                        }})</template
+                    >
                 </li>
                 <li v-if="report.sides[entry.side].filtered_out">
                     {{ report.sides[entry.side].filtered_out }} lines of other

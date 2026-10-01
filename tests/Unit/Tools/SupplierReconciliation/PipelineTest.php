@@ -52,7 +52,7 @@ class PipelineTest extends TestCase
         $prepared[Side::Statement->value] = $this->prepare(Side::Statement, $statement);
         $prepared[Side::Ledger->value] = $this->prepare(Side::Ledger, $ledger);
 
-        $report = (new PreflightCheck)->check($prepared['statement'], $prepared['ledger']);
+        $report = (new PreflightCheck)->check($prepared['statement'], $prepared['ledger'], 'EUR');
         $this->assertTrue($report['ready'], implode("\n", $report['blocking']));
 
         $result = (new ReconciliationEngine)->reconcile(

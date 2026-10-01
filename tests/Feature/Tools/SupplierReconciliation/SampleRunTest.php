@@ -27,9 +27,15 @@ class SampleRunTest extends TestCase
                 ->where('files.statement.sample', true)
                 ->where('files.ledger.sample', true));
 
+        $this->get(route('supplier-reconciliation.mapping.edit', $run))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('currency.value', 'GBP')
+                ->where('currency.confirmed', false));
+
         $this->put(route('supplier-reconciliation.mapping.update', $run), [
             'statement' => $run->statement_mapping,
             'ledger' => $run->ledger_mapping,
+            'currency' => 'GBP',
         ])->assertRedirect(route('supplier-reconciliation.check', $run));
 
         $this->get(route('supplier-reconciliation.check', $run))

@@ -48,22 +48,22 @@ encore ni clients, ni fournisseurs, ni mappings sauvegardés, ni historique comm
 
 ## B. Import et préparation
 
-| Élément                                         | État | Notes                                                                                          |
-| ----------------------------------------------- | ---- | ---------------------------------------------------------------------------------------------- |
-| Import CSV                                      | ✅   | Séparateur et encodages courants détectés                                                      |
-| Import XLSX                                     | 🟡   | Code présent; OpenSpout absent du `vendor` local au dernier contrôle                           |
-| Refus explicite XLS/PDF/images                  | ✅   | Conforme au périmètre A                                                                        |
-| Limites et protection ZIP bomb                  | ✅   | Taille, lignes, colonnes et taille décompressée                                                |
-| Détection et modification de la ligne d'en-tête | ✅   | Fonctionnel                                                                                    |
-| Mapping des colonnes et valeurs d'exemple       | ✅   | Référence, date, montants, type, description, fournisseur                                      |
-| Conventions date, décimales et signes           | ✅   | Confirmables par fichier                                                                       |
-| Filtre fournisseur                              | ✅   | Disponible si la colonne est mappée                                                            |
-| Fichiers imparfaits courants                    | 🟡   | Plusieurs cas couverts (dont pied de page texte dans la colonne Date); corpus réel à renforcer |
-| Choix de feuille XLSX                           | 🔴   | Première feuille non vide uniquement                                                           |
-| Référence secondaire                            | 🔴   | Une seule colonne actuellement                                                                 |
-| Devise unique et garde-fous                     | 🔴   | Priorité A2                                                                                    |
-| Contrôle facultatif du solde                    | 🔴   | Priorité A2                                                                                    |
-| PDF texte / OCR                                 | ⏸️   | Périmètre C après validation                                                                   |
+| Élément                                         | État | Notes                                                                                                                                                               |
+| ----------------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Import CSV                                      | ✅   | Séparateur et encodages courants détectés                                                                                                                           |
+| Import XLSX                                     | 🟡   | Code présent; OpenSpout absent du `vendor` local au dernier contrôle                                                                                                |
+| Refus explicite XLS/PDF/images                  | ✅   | Conforme au périmètre A                                                                                                                                             |
+| Limites et protection ZIP bomb                  | ✅   | Taille, lignes, colonnes et taille décompressée                                                                                                                     |
+| Détection et modification de la ligne d'en-tête | ✅   | Fonctionnel                                                                                                                                                         |
+| Mapping des colonnes et valeurs d'exemple       | ✅   | Référence, date, montants, type, description, fournisseur                                                                                                           |
+| Conventions date, décimales et signes           | ✅   | Confirmables par fichier                                                                                                                                            |
+| Filtre fournisseur                              | ✅   | Disponible si la colonne est mappée                                                                                                                                 |
+| Fichiers imparfaits courants                    | 🟡   | Plusieurs cas couverts (dont pied de page texte dans la colonne Date); corpus réel à renforcer                                                                      |
+| Choix de feuille XLSX                           | 🔴   | Première feuille non vide uniquement                                                                                                                                |
+| Référence secondaire                            | 🔴   | Une seule colonne actuellement                                                                                                                                      |
+| Devise unique et garde-fous                     | ✅   | Détectée (codes, symboles, en-tête, colonne Currency), confirmée à l'étape Columns ; toute autre devise bloque ; jamais de conversion ; colonne Currency à l'export |
+| Contrôle facultatif du solde                    | 🔴   | Priorité A2                                                                                                                                                         |
+| PDF texte / OCR                                 | ⏸️   | Périmètre C après validation                                                                                                                                        |
 
 ## C. Moteur de rapprochement
 
@@ -183,13 +183,14 @@ Ces chiffres doivent être remplacés par le prochain résultat complet, pas sim
 
 ## Journal des changements
 
-| Date       | Changement                                                 | Preuve                                                         |
-| ---------- | ---------------------------------------------------------- | -------------------------------------------------------------- |
-| 2026-10-01 | Design system mjtools, refonte de l'accueil et du parcours | Vérification navigateur clair/sombre/mobile, vp check, vue-tsc |
-| 2026-10-01 | Jeu d'exemple en un clic + correction pied de page texte   | `SampleRunTest`, `MappingTest`                                 |
-| 2026-10-01 | Environnement de tests rétabli : suite complète verte      | 224/224, pint, phpstan, vp check, vue-tsc                      |
-| 2026-10-01 | Création du suivi et séparation des périmètres A/B/C       | Spec et plan mis à jour                                        |
-| 2026-09-30 | Migration MySQL corrigée (`TIMESTAMP` → `DATETIME`)        | `php artisan migrate` réussi                                   |
+| Date       | Changement                                                         | Preuve                                                               |
+| ---------- | ------------------------------------------------------------------ | -------------------------------------------------------------------- |
+| 2026-10-02 | Devise unique par rapprochement (détection, confirmation, blocage) | `CurrencyCheckTest`, `CurrencyDetectorTest`, tests Feature ; 251/251 |
+| 2026-10-01 | Design system mjtools, refonte de l'accueil et du parcours         | Vérification navigateur clair/sombre/mobile, vp check, vue-tsc       |
+| 2026-10-01 | Jeu d'exemple en un clic + correction pied de page texte           | `SampleRunTest`, `MappingTest`                                       |
+| 2026-10-01 | Environnement de tests rétabli : suite complète verte              | 224/224, pint, phpstan, vp check, vue-tsc                            |
+| 2026-10-01 | Création du suivi et séparation des périmètres A/B/C               | Spec et plan mis à jour                                              |
+| 2026-09-30 | Migration MySQL corrigée (`TIMESTAMP` → `DATETIME`)                | `php artisan migrate` réussi                                         |
 
 ## Règle de maintenance
 

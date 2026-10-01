@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
-import { ArrowRight, TriangleAlert } from '@lucide/vue';
+import { ArrowRight, Coins, TriangleAlert } from '@lucide/vue';
+import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { update } from '@/routes/supplier-reconciliation/mapping';
 import MappingSideForm from '@/tools/supplier-reconciliation/components/MappingSideForm.vue';
 import PageHeading from '@/tools/supplier-reconciliation/components/PageHeading.vue';
 import StepNav from '@/tools/supplier-reconciliation/components/StepNav.vue';
 import type {
+    CurrencyChoice,
     MappingSide,
     MappingValues,
     Run,
@@ -16,6 +18,7 @@ import type {
 const props = defineProps<{
     run: Run;
     sides: Record<Side, MappingSide>;
+    currency: CurrencyChoice;
 }>();
 
 function initial(side: MappingSide): MappingValues {
@@ -31,7 +34,11 @@ function initial(side: MappingSide): MappingValues {
 const form = useForm({
     statement: initial(props.sides.statement),
     ledger: initial(props.sides.ledger),
+    currency: props.currency.value,
 });
+
+const selectClass =
+    'border-input bg-background dark:bg-input/30 h-10 w-full rounded-md border px-2.5 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none';
 
 function submit(): void {
     form.put(update.url(props.run.id), { preserveScroll: true });
@@ -58,6 +65,56 @@ function submit(): void {
     </p>
 
     <form class="mt-8" @submit.prevent="submit">
+        <section
+            class="bg-card mb-6 grid gap-5 rounded-xl border p-6 shadow-xs md:grid-cols-[1fr_18rem] md:items-center"
+        >
+            <div class="flex gap-3">
+                <span
+                    class="bg-accent text-primary flex size-9 shrink-0 items-center justify-center rounded-lg"
+                >
+                    <Coins class="size-4.5" />
+                </span>
+                <div>
+                    <h2 class="font-semibold">
+                        Currency of this reconciliation
+                    </h2>
+                    <p class="text-muted-foreground text-sm">
+                        {{ currency.message }} Both files must be in this
+                        currency: amounts are never converted, and lines in
+                        another currency block the check.
+                    </p>
+                </div>
+            </div>
+            <label class="block text-sm">
+                <span class="sr-only">Currency</span>
+                <select
+                    v-model="form.currency"
+                    :class="selectClass"
+                    required
+                    aria-label="Currency of this reconciliation"
+                >
+                    <option :value="null" disabled>Choose a currency…</option>
+                    <option
+                        v-for="option in currency.options"
+                        :key="option.value"
+                        :value="option.value"
+                    >
+                        {{ option.label }}
+                    </option>
+                </select>
+                <span
+                    v-if="
+                        currency.proposed &&
+                        form.currency === currency.proposed &&
+                        !currency.confirmed
+                    "
+                    class="text-success-strong mt-1 block text-xs"
+                    >Detected in your files — confirm by saving.</span
+                >
+                <InputError :message="form.errors.currency" />
+            </label>
+        </section>
+
         <div class="grid gap-6 lg:grid-cols-2">
             <MappingSideForm
                 v-model="form.statement"

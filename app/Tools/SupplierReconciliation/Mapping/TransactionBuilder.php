@@ -9,6 +9,8 @@ use App\Tools\SupplierReconciliation\Domain\Transaction;
 use App\Tools\SupplierReconciliation\Import\ImportedTable;
 use App\Tools\SupplierReconciliation\Normalization\AmountParser;
 use App\Tools\SupplierReconciliation\Normalization\BalanceLineDetector;
+use App\Tools\SupplierReconciliation\Normalization\CurrencyDetector;
+use App\Tools\SupplierReconciliation\Normalization\CurrencyMark;
 use App\Tools\SupplierReconciliation\Normalization\DateParser;
 use App\Tools\SupplierReconciliation\Normalization\DocumentTypeClassifier;
 use App\Tools\SupplierReconciliation\Normalization\ReferenceNormalizer;
@@ -28,6 +30,7 @@ final class TransactionBuilder
         private readonly DateParser $dates = new DateParser,
         private readonly DocumentTypeClassifier $types = new DocumentTypeClassifier,
         private readonly BalanceLineDetector $balanceLines = new BalanceLineDetector,
+        private readonly CurrencyDetector $currencies = new CurrencyDetector,
     ) {}
 
     public function build(ImportedTable $table, ColumnMapping $mapping, Side $side): BuiltTransactions
@@ -36,6 +39,8 @@ final class TransactionBuilder
         $rowIssues = [];
         $filteredOut = 0;
         $ignored = 0;
+        /** @var array<string, array{mark: CurrencyMark, lines: int}> $currencyLines */
+        $currencyLines = [];
 
         foreach ($table->rows as $row) {
             $original = $this->originalValues($row['cells'], $mapping);
@@ -69,9 +74,22 @@ final class TransactionBuilder
             }
 
             $transactions[] = $transaction;
+
+            $mark = $this->lineCurrency($original);
+
+            if ($mark !== null) {
+                $currencyLines[$mark->label] ??= ['mark' => $mark, 'lines' => 0];
+                $currencyLines[$mark->label]['lines']++;
+            }
         }
 
-        return new BuiltTransactions($transactions, $rowIssues, $filteredOut, $ignored);
+        return new BuiltTransactions(
+            $transactions,
+            $rowIssues,
+            $filteredOut,
+            $ignored,
+            new CurrencyEvidence($currencyLines, $this->headerCurrency($table, $mapping)),
+        );
     }
 
     /**
@@ -207,6 +225,51 @@ final class TransactionBuilder
     private function unusedAmountFields(ColumnMapping $mapping): array
     {
         return $mapping->amountMode === AmountMode::Signed ? [Field::Debit, Field::Credit] : [Field::Amount];
+    }
+
+    /**
+     * Currency written on a line: its currency column first, otherwise the
+     * amount cells. Text in a currency column that is not a known code is
+     * kept as its own currency so that it can never be compared silently.
+     *
+     * @param  array<string, string>  $original
+     */
+    private function lineCurrency(array $original): ?CurrencyMark
+    {
+        $column = $original[Field::Currency->value] ?? null;
+
+        if ($column !== null) {
+            return $this->currencies->detect($column) ?? new CurrencyMark(trim($column), []);
+        }
+
+        foreach ([Field::Amount, Field::Debit, Field::Credit] as $field) {
+            $mark = $this->currencies->detect($original[$field->value] ?? null);
+
+            if ($mark !== null) {
+                return $mark;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Currency announced by the header of the amount column(s): "Amount (EUR)".
+     */
+    private function headerCurrency(ImportedTable $table, ColumnMapping $mapping): ?CurrencyMark
+    {
+        $fields = $mapping->amountMode === AmountMode::Signed ? [Field::Amount] : [Field::Debit, Field::Credit];
+
+        foreach ($fields as $field) {
+            $column = $mapping->column($field);
+            $mark = $column === null ? null : $this->currencies->detectInHeader($table->headers[$column] ?? null);
+
+            if ($mark !== null) {
+                return $mark;
+            }
+        }
+
+        return null;
     }
 
     /**

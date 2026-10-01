@@ -129,6 +129,12 @@ Fichier ─► Import (RawTable) ─► détection en-têtes + mapping proposé 
       une règle de fichier explicite et visible, jamais un ajustement ligne à ligne ;
     - option « le signe vient de la colonne Type » quand les avoirs sont listés en positif.
 - Filtre fournisseur optionnel si le ledger contient plusieurs fournisseurs.
+- **Devise unique** (A2) : `CurrencyDetector` lit les codes ISO et symboles des montants, une
+  colonne Currency optionnelle et l'en-tête de la colonne montant (« Amount (GBP) ») ; un symbole
+  ambigu (`$`) reste compatible avec plusieurs codes. La devise est proposée puis confirmée pour
+  tout le rapprochement (`supplier_reconciliation_runs.currency`). Le contrôle avant analyse bloque
+  si elle n'est pas confirmée ou si une ligne ou un fichier indique une autre devise. Aucune
+  conversion.
 - Contrôle avant analyse : lignes par fichier, champs ✓, lignes illisibles, conventions
   appliquées, **suggestion d'inversion de signe** si les références communes ont
   majoritairement des signes opposés. Bloquant si champs requis absents ou trop de lignes

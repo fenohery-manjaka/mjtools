@@ -73,6 +73,7 @@ class ReconciliationFlowTest extends TestCase
         $this->put(route('supplier-reconciliation.mapping.update', $run), [
             'statement' => $run->statement_mapping,
             'ledger' => $run->ledger_mapping,
+            'currency' => 'EUR',
         ])->assertRedirect(route('supplier-reconciliation.check', $run));
 
         return $run->refresh();
@@ -125,6 +126,7 @@ class ReconciliationFlowTest extends TestCase
         $this->put(route('supplier-reconciliation.mapping.update', $run), [
             'statement' => $run->statement_mapping,
             'ledger' => $run->ledger_mapping,
+            'currency' => 'EUR',
         ])->assertRedirect(route('supplier-reconciliation.check', $run));
 
         $this->get(route('supplier-reconciliation.check', $run))
@@ -248,6 +250,35 @@ class ReconciliationFlowTest extends TestCase
         $this->assertModelMissing($run);
     }
 
+    public function test_the_currency_must_be_confirmed_and_changing_it_discards_results(): void
+    {
+        $run = $this->preparedRun();
+
+        $this->put(route('supplier-reconciliation.mapping.update', $run), [
+            'statement' => $run->statement_mapping,
+            'ledger' => $run->ledger_mapping,
+        ])->assertSessionHasErrors('currency');
+
+        $this->put(route('supplier-reconciliation.mapping.update', $run), [
+            'statement' => $run->statement_mapping,
+            'ledger' => $run->ledger_mapping,
+            'currency' => 'XYZ',
+        ])->assertSessionHasErrors('currency');
+
+        $this->post(route('supplier-reconciliation.reconcile', $run));
+        $this->assertTrue($run->refresh()->isReconciled());
+        $this->assertSame('EUR', $run->currency);
+
+        $this->put(route('supplier-reconciliation.mapping.update', $run), [
+            'statement' => $run->statement_mapping,
+            'ledger' => $run->ledger_mapping,
+            'currency' => 'GBP',
+        ])->assertRedirect(route('supplier-reconciliation.check', $run));
+
+        $this->assertFalse($run->refresh()->isReconciled());
+        $this->assertSame('GBP', $run->currency);
+    }
+
     public function test_the_user_can_delete_their_data(): void
     {
         $run = $this->preparedRun();
@@ -286,6 +317,7 @@ class ReconciliationFlowTest extends TestCase
         $this->put(route('supplier-reconciliation.mapping.update', $run), [
             'statement' => $mapping,
             'ledger' => $run->ledger_mapping,
+            'currency' => 'EUR',
         ]);
 
         $this->get(route('supplier-reconciliation.check', $run))
@@ -308,6 +340,7 @@ class ReconciliationFlowTest extends TestCase
         $this->put(route('supplier-reconciliation.mapping.update', $run), [
             'statement' => $mapping,
             'ledger' => $run->ledger_mapping,
+            'currency' => 'EUR',
         ])->assertSessionHasErrors('statement.columns.reference');
     }
 

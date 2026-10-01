@@ -37,7 +37,7 @@ class ReconciliationController extends Controller
 
         return Inertia::render('tools/supplier-reconciliation/Check', [
             'run' => $this->presenter->run($run),
-            'report' => $check->check(...$prepared),
+            'report' => $check->check(...$prepared, currency: $run->currency),
         ]);
     }
 
@@ -56,7 +56,7 @@ class ReconciliationController extends Controller
             return to_route('supplier-reconciliation.files.edit', $run);
         }
 
-        $report = (new PreflightCheck)->check(...$prepared);
+        $report = (new PreflightCheck)->check(...$prepared, currency: $run->currency);
 
         if (! $report['ready']) {
             UsageLog::record('reconciliation_blocked', $run, ['problems' => count($report['blocking'])]);

@@ -15,6 +15,7 @@ final readonly class BuiltTransactions
         public array $rowIssues,
         public int $filteredOut,
         public int $ignoredTextRows = 0,
+        public CurrencyEvidence $currencies = new CurrencyEvidence,
     ) {}
 
     public function count(): int

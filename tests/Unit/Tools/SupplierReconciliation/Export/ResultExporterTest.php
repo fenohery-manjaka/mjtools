@@ -45,7 +45,16 @@ class ResultExporterTest extends TestCase
         $this->assertSame('Certain', $rows[0][5]);
         $this->assertSame(['2', 'INV-100', '01/08/2026', '100.00'], array_slice($rows[0], 7, 4));
         $this->assertSame(['2', 'INV-100', '01/08/2026', '100.00'], array_slice($rows[0], 11, 4));
-        $this->assertStringContainsString('Same reference, amount and date.', $rows[0][16]);
+        $this->assertStringContainsString('Same reference, amount and date.', $rows[0][17]);
+    }
+
+    public function test_rows_carry_the_reconciliation_currency(): void
+    {
+        $rows = (new ResultExporter)->rows($this->reviewed(), 'EUR');
+
+        $this->assertSame('Currency', ResultExporter::HEADERS[16]);
+        $this->assertSame('EUR', $rows[0][16]);
+        $this->assertSame('', (new ResultExporter)->rows($this->reviewed())[0][16]);
     }
 
     public function test_grouped_items_span_several_lines_with_the_same_item_id(): void
@@ -70,7 +79,7 @@ class ResultExporterTest extends TestCase
 
         $this->assertSame('Confirmed by you', $row[2]);
         $this->assertSame('Possible match', $row[3]);
-        $this->assertSame('Confirmed by you 2026-09-01 10:00', $row[17]);
+        $this->assertSame('Confirmed by you 2026-09-01 10:00', $row[18]);
     }
 
     public function test_csv_neutralizes_formulas_but_keeps_negative_numbers(): void

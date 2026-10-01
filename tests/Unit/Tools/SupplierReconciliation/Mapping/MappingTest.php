@@ -180,7 +180,7 @@ class MappingTest extends TestCase
         $statement = $this->prepare(Side::Statement, "Ref,Date,Amount\nINV-1,13/08/2026,10.00\nINV-2,14/08/2026,20.00\n", ['reference' => 0, 'date' => 1, 'amount' => 2]);
         $ledger = $this->prepare(Side::Ledger, "Ref,Date,Amount\nINV-1,13/08/2026,10.00\n", ['reference' => 0, 'date' => 1, 'amount' => 2]);
 
-        $report = (new PreflightCheck)->check($statement, $ledger);
+        $report = (new PreflightCheck)->check($statement, $ledger, 'EUR');
 
         $this->assertTrue($report['ready'], implode("\n", $report['blocking']));
         $this->assertSame(2, $report['sides']['statement']['transactions']);
@@ -192,7 +192,7 @@ class MappingTest extends TestCase
         $statement = $this->prepare(Side::Statement, "Ref,Date,Amount\nINV-1,13/08/2026,abc\nINV-2,14/08/2026,xyz\n", ['reference' => 0, 'date' => 1, 'amount' => 2]);
         $ledger = $this->prepare(Side::Ledger, "Ref,Date,Amount\nINV-1,13/08/2026,10.00\n", ['date' => 1, 'amount' => 2]);
 
-        $report = (new PreflightCheck)->check($statement, $ledger);
+        $report = (new PreflightCheck)->check($statement, $ledger, 'EUR');
 
         $this->assertFalse($report['ready']);
         $this->assertCount(2, $report['blocking']);
@@ -205,7 +205,7 @@ class MappingTest extends TestCase
         $statement = $this->prepare(Side::Statement, "Ref,Amount\nINV-1,10.00\n", ['reference' => 0, 'amount' => 1, 'description' => 1]);
         $ledger = $this->prepare(Side::Ledger, "Ref,Amount\nINV-1,10.00\n", ['reference' => 0, 'amount' => 1]);
 
-        $this->assertFalse((new PreflightCheck)->check($statement, $ledger)['ready']);
+        $this->assertFalse((new PreflightCheck)->check($statement, $ledger, 'EUR')['ready']);
     }
 
     public function test_preflight_suggests_inverting_the_ledger_sign(): void
@@ -214,7 +214,7 @@ class MappingTest extends TestCase
         $statement = $this->prepare(Side::Statement, sprintf($rows, '', '', ''), ['reference' => 0, 'date' => 1, 'amount' => 2]);
         $ledger = $this->prepare(Side::Ledger, sprintf($rows, '-', '-', '-'), ['reference' => 0, 'date' => 1, 'amount' => 2]);
 
-        $report = (new PreflightCheck)->check($statement, $ledger);
+        $report = (new PreflightCheck)->check($statement, $ledger, 'EUR');
 
         $this->assertTrue($report['suggest_inverting_ledger_sign']);
         $this->assertTrue($report['ready']);
@@ -226,11 +226,11 @@ class MappingTest extends TestCase
         $statement = $this->prepare(Side::Statement, "Ref,Amount\nINV-1,10.00\n", ['reference' => 0, 'amount' => 1]);
         $ledger = $this->prepare(Side::Ledger, $csv, ['reference' => 0, 'supplier' => 1, 'amount' => 2]);
 
-        $warnings = implode("\n", (new PreflightCheck)->check($statement, $ledger)['warnings']);
+        $warnings = implode("\n", (new PreflightCheck)->check($statement, $ledger, 'EUR')['warnings']);
         $this->assertStringContainsString('2 different suppliers', $warnings);
 
         $filtered = PreparedSide::prepare(Side::Ledger, $this->table($csv), new ColumnMapping(0, ['reference' => 0, 'supplier' => 1, 'amount' => 2], supplierFilter: 'ACME'));
-        $this->assertStringNotContainsString('different suppliers', implode("\n", (new PreflightCheck)->check($statement, $filtered)['warnings']));
+        $this->assertStringNotContainsString('different suppliers', implode("\n", (new PreflightCheck)->check($statement, $filtered, 'EUR')['warnings']));
     }
 
     public function test_preflight_warns_about_ambiguous_dates(): void
@@ -238,7 +238,7 @@ class MappingTest extends TestCase
         $statement = $this->prepare(Side::Statement, "Ref,Date,Amount\nINV-1,01/02/2026,10.00\n", ['reference' => 0, 'date' => 1, 'amount' => 2]);
         $ledger = $this->prepare(Side::Ledger, "Ref,Date,Amount\nINV-1,01/02/2026,10.00\n", ['reference' => 0, 'date' => 1, 'amount' => 2]);
 
-        $warnings = implode("\n", (new PreflightCheck)->check($statement, $ledger)['warnings']);
+        $warnings = implode("\n", (new PreflightCheck)->check($statement, $ledger, 'EUR')['warnings']);
 
         $this->assertStringContainsString('could be read day-first or month-first', $warnings);
     }

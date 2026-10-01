@@ -37,6 +37,7 @@ final class ResultExporter
         'Ledger date',
         'Ledger amount',
         'Difference',
+        'Currency',
         'Reasons',
         'Human decision',
     ];
@@ -44,7 +45,7 @@ final class ResultExporter
     /**
      * @return list<list<string>>
      */
-    public function rows(ReviewedResult $result): array
+    public function rows(ReviewedResult $result, ?string $currency = null): array
     {
         $rows = [];
 
@@ -65,6 +66,7 @@ final class ResultExporter
                     ...$this->transactionColumns($statement[$i] ?? null),
                     ...$this->transactionColumns($ledger[$i] ?? null),
                     $i === 0 ? ($item->difference?->toDecimal() ?? '') : '',
+                    $currency ?? '',
                     $i === 0 ? $this->reasons($item) : '',
                     $i === 0 && $item->decision !== null ? trim($item->decision->action->label().' '.$item->decision->decidedAt) : '',
                 ];
@@ -74,7 +76,7 @@ final class ResultExporter
         return $rows;
     }
 
-    public function csv(ReviewedResult $result): string
+    public function csv(ReviewedResult $result, ?string $currency = null): string
     {
         $handle = fopen('php://temp', 'r+');
 
@@ -86,7 +88,7 @@ final class ResultExporter
         fwrite($handle, "\xEF\xBB\xBF");
         fputcsv($handle, self::HEADERS, ',', '"', '');
 
-        foreach ($this->rows($result) as $row) {
+        foreach ($this->rows($result, $currency) as $row) {
             fputcsv($handle, array_map($this->neutralizeFormula(...), $row), ',', '"', '');
         }
 
@@ -100,14 +102,14 @@ final class ResultExporter
     /**
      * Writes an XLSX workbook (results + summary) to the given path.
      */
-    public function xlsx(ReviewedResult $result, string $path): void
+    public function xlsx(ReviewedResult $result, string $path, ?string $currency = null): void
     {
         $writer = new Writer;
         $writer->openToFile($path);
         $writer->getCurrentSheet()->setName('Results');
         $writer->addRow($this->textRow(self::HEADERS));
 
-        foreach ($this->rows($result) as $row) {
+        foreach ($this->rows($result, $currency) as $row) {
             $writer->addRow($this->textRow($row));
         }
 

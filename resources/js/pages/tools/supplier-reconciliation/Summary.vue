@@ -216,7 +216,14 @@ const clearedWidth = computed(
             v-if="amounts.length"
             class="bg-card rounded-xl border p-6 shadow-xs"
         >
-            <h2 class="font-semibold">Amounts involved in open exceptions</h2>
+            <h2 class="flex items-baseline justify-between gap-3 font-semibold">
+                Amounts involved in open exceptions
+                <span
+                    v-if="run.currency"
+                    class="figure text-muted-foreground text-xs font-normal"
+                    >{{ run.currency }}</span
+                >
+            </h2>
             <dl class="mt-4 divide-y">
                 <div
                     v-for="amount in amounts"
@@ -233,7 +240,14 @@ const clearedWidth = computed(
                             >({{ amount.count }})</span
                         >
                     </dt>
-                    <dd class="figure font-medium">{{ amount.total }}</dd>
+                    <dd class="figure font-medium">
+                        {{ amount.total }}
+                        <span
+                            v-if="run.currency"
+                            class="text-muted-foreground text-xs"
+                            >{{ run.currency }}</span
+                        >
+                    </dd>
                 </div>
             </dl>
             <p class="text-muted-foreground mt-3 text-xs">

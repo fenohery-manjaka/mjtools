@@ -20,20 +20,26 @@ final class PreflightCheck
 
     public function __construct(
         private readonly FormatDetector $formats = new FormatDetector,
+        private readonly CurrencyCheck $currencies = new CurrencyCheck,
     ) {}
 
     /**
-     * @return array{ready: bool, blocking: list<string>, warnings: list<string>, sides: array<string, array<string, mixed>>, suggest_inverting_ledger_sign: bool}
+     * @param  ?string  $currency  Currency confirmed for the reconciliation; null while not confirmed.
+     * @return array{ready: bool, blocking: list<string>, warnings: list<string>, sides: array<string, array<string, mixed>>, suggest_inverting_ledger_sign: bool, currency: ?string}
      */
-    public function check(PreparedSide $statement, PreparedSide $ledger): array
+    public function check(PreparedSide $statement, PreparedSide $ledger, ?string $currency): array
     {
         $blocking = [];
         $warnings = [];
         $sides = [];
 
+        if ($currency === null) {
+            $blocking[] = 'Confirm the currency of this reconciliation in the Columns step: amounts are only compared within one currency.';
+        }
+
         foreach ([$statement, $ledger] as $prepared) {
             [$sideBlocking, $sideWarnings] = $this->checkSide($prepared);
-            $blocking = [...$blocking, ...$sideBlocking];
+            $blocking = [...$blocking, ...$sideBlocking, ...$this->currencies->problems($prepared, $currency)];
             $warnings = [...$warnings, ...$sideWarnings];
             $sides[$prepared->side->value] = $this->describeSide($prepared);
         }
@@ -50,6 +56,7 @@ final class PreflightCheck
             'warnings' => $warnings,
             'sides' => $sides,
             'suggest_inverting_ledger_sign' => $invertLedger,
+            'currency' => $currency,
         ];
     }
 
@@ -194,6 +201,7 @@ final class PreflightCheck
             'filtered_out' => $built->filteredOut,
             'ignored_text_rows' => $built->ignoredTextRows,
             'conventions' => $this->conventions($mapping),
+            'currencies' => $built->currencies->describe(),
             'row_issues' => array_slice(
                 array_map(fn (int $row, array $issues): array => ['row' => $row, 'issues' => $issues], array_keys($built->rowIssues), $built->rowIssues),
                 0,

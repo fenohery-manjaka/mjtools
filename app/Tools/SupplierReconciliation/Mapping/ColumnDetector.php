@@ -6,6 +6,7 @@ use App\Tools\SupplierReconciliation\Domain\DocumentType;
 use App\Tools\SupplierReconciliation\Domain\Side;
 use App\Tools\SupplierReconciliation\Import\ImportedTable;
 use App\Tools\SupplierReconciliation\Normalization\AmountParser;
+use App\Tools\SupplierReconciliation\Normalization\CurrencyDetector;
 use App\Tools\SupplierReconciliation\Normalization\DocumentTypeClassifier;
 use App\Tools\SupplierReconciliation\Normalization\ReferenceNormalizer;
 
@@ -27,6 +28,7 @@ final class ColumnDetector
         'type' => '/\b(type|nature|kind|doc(ument)? type|transaction type|trans type)\b/iu',
         'description' => '/\b(description|libellé|libelle|details|memo|narrative|text|label|comment|particulars)\b/iu',
         'supplier' => '/\b(supplier|vendor|fournisseur|creditor|tiers|payee|account name)\b/iu',
+        'currency' => '/^\s*(currency|curr\.?|ccy|cur|devise|monnaie|currency code)\s*$/iu',
     ];
 
     public function __construct(
@@ -98,6 +100,8 @@ final class ColumnDetector
 
         $pick(Field::Type->value, fn (ColumnProfile $s): float => $matches('type', $s->header) && ! $matches('date', $s->header) ? 1.0 : 0.0);
 
+        $pick(Field::Currency->value, fn (ColumnProfile $s): float => $matches('currency', $s->header) || $this->currencyCodeRatio($s) >= 0.8 ? 1.0 : 0.0);
+
         $pick(Field::Reference->value, fn (ColumnProfile $s): float => $this->referenceScore($s, $matches('reference', $s->header), $matches('date', $s->header)));
 
         $pick(Field::Description->value, fn (ColumnProfile $s): float => $matches('description', $s->header) ? 1.0 : 0.0);
@@ -144,6 +148,22 @@ final class ColumnDetector
             dateOrder: $dateOrder,
             decimalSeparator: $separator,
         );
+    }
+
+    /**
+     * Share of filled cells that are exactly an ISO currency code.
+     */
+    private function currencyCodeRatio(ColumnProfile $s): float
+    {
+        $values = array_values(array_filter($s->values, fn (string $v): bool => trim($v) !== ''));
+
+        if ($values === []) {
+            return 0.0;
+        }
+
+        $codes = CurrencyDetector::codes();
+
+        return count(array_filter($values, fn (string $v): bool => in_array(strtoupper(trim($v)), $codes, true))) / count($values);
     }
 
     private function referenceScore(ColumnProfile $s, bool $headerMatches, bool $isDateHeader): float

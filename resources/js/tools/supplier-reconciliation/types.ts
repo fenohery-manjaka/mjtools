@@ -10,6 +10,15 @@ export type Run = {
     reconciled: boolean;
     statement_name: string | null;
     ledger_name: string | null;
+    currency: string | null;
+};
+
+export type CurrencyChoice = {
+    value: string | null;
+    confirmed: boolean;
+    proposed: string | null;
+    message: string;
+    options: Option[];
 };
 
 export type Limits = {
@@ -81,6 +90,7 @@ export type SideReport = {
     filtered_out: number;
     ignored_text_rows: number;
     conventions: string[];
+    currencies: { label: string; lines: number | null }[];
     row_issues: { row: number; issues: string[] }[];
 };
 
@@ -90,6 +100,7 @@ export type PreflightReport = {
     warnings: string[];
     sides: Record<Side, SideReport>;
     suggest_inverting_ledger_sign: boolean;
+    currency: string | null;
 };
 
 export type AmountTotal = { count: number; total: string };

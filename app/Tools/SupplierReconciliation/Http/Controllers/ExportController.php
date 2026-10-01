@@ -32,8 +32,8 @@ class ExportController extends Controller
 
         if ($format === 'csv') {
             return response()->streamDownload(
-                function () use ($exporter, $reviewed): void {
-                    echo $exporter->csv($reviewed);
+                function () use ($exporter, $reviewed, $run): void {
+                    echo $exporter->csv($reviewed, $run->currency);
                 },
                 "{$name}.csv",
                 ['Content-Type' => 'text/csv; charset=UTF-8'],
@@ -46,7 +46,7 @@ class ExportController extends Controller
             abort(500);
         }
 
-        $exporter->xlsx($reviewed, $path);
+        $exporter->xlsx($reviewed, $path, $run->currency);
 
         return response()->download($path, "{$name}.xlsx", [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

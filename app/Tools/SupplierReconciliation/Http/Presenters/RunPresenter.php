@@ -7,7 +7,9 @@ use App\Tools\SupplierReconciliation\Domain\Transaction;
 use App\Tools\SupplierReconciliation\Import\ImportedTable;
 use App\Tools\SupplierReconciliation\Mapping\AmountMode;
 use App\Tools\SupplierReconciliation\Mapping\ColumnMapping;
+use App\Tools\SupplierReconciliation\Mapping\CurrencyCheck;
 use App\Tools\SupplierReconciliation\Mapping\Field;
+use App\Tools\SupplierReconciliation\Normalization\CurrencyDetector;
 use App\Tools\SupplierReconciliation\Normalization\DateOrder;
 use App\Tools\SupplierReconciliation\Normalization\DecimalSeparator;
 use App\Tools\SupplierReconciliation\Result\Candidate;
@@ -27,6 +29,17 @@ final class RunPresenter
 
     private const HEADER_CHOICES = 15;
 
+    private const CURRENCY_NAMES = [
+        'EUR' => 'Euro', 'USD' => 'US dollar', 'GBP' => 'Pound sterling', 'CHF' => 'Swiss franc',
+        'CAD' => 'Canadian dollar', 'AUD' => 'Australian dollar', 'NZD' => 'New Zealand dollar',
+        'JPY' => 'Japanese yen', 'CNY' => 'Chinese yuan', 'HKD' => 'Hong Kong dollar', 'SGD' => 'Singapore dollar',
+        'INR' => 'Indian rupee', 'ZAR' => 'South African rand', 'SEK' => 'Swedish krona', 'NOK' => 'Norwegian krone',
+        'DKK' => 'Danish krone', 'PLN' => 'Polish złoty', 'CZK' => 'Czech koruna', 'HUF' => 'Hungarian forint',
+        'RON' => 'Romanian leu', 'BRL' => 'Brazilian real', 'MGA' => 'Malagasy ariary', 'MUR' => 'Mauritian rupee',
+        'XOF' => 'West African CFA franc', 'XAF' => 'Central African CFA franc', 'MAD' => 'Moroccan dirham',
+        'TND' => 'Tunisian dinar', 'AED' => 'UAE dirham',
+    ];
+
     /**
      * @return array<string, mixed>
      */
@@ -40,6 +53,32 @@ final class RunPresenter
             'reconciled' => $run->isReconciled(),
             'statement_name' => $run->statement_file['name'] ?? null,
             'ledger_name' => $run->ledger_file['name'] ?? null,
+            'currency' => $run->currency,
+        ];
+    }
+
+    /**
+     * The reconciliation currency: confirmed value, or the proposal drawn from the files.
+     *
+     * @return array<string, mixed>
+     */
+    public function currency(ReconciliationRun $run): array
+    {
+        $statement = $run->prepared(Side::Statement);
+        $ledger = $run->prepared(Side::Ledger);
+        $proposal = $statement === null || $ledger === null
+            ? ['code' => null, 'message' => '']
+            : (new CurrencyCheck)->propose($statement, $ledger);
+
+        return [
+            'value' => $run->currency ?? $proposal['code'],
+            'confirmed' => $run->currency !== null,
+            'proposed' => $proposal['code'],
+            'message' => $proposal['message'],
+            'options' => array_map(
+                fn (string $code): array => ['value' => $code, 'label' => $code.' — '.(self::CURRENCY_NAMES[$code] ?? $code)],
+                CurrencyDetector::codes(),
+            ),
         ];
     }
 
