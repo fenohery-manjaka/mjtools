@@ -44,8 +44,7 @@ final class TransactionBuilder
                 continue;
             }
 
-            // Free text lines (notes, messages) carry no reference, date or amount.
-            if (array_intersect_key($original, array_flip(['reference', 'date', 'amount', 'debit', 'credit'])) === []) {
+            if ($this->isFreeText($original, $mapping)) {
                 $ignored++;
 
                 continue;
@@ -208,6 +207,24 @@ final class TransactionBuilder
     private function unusedAmountFields(ColumnMapping $mapping): array
     {
         return $mapping->amountMode === AmountMode::Signed ? [Field::Debit, Field::Credit] : [Field::Amount];
+    }
+
+    /**
+     * Free text lines (notes, messages, footers) carry no reference, no amount
+     * and no readable date — even when the text sits in the date column. They
+     * cannot describe a transaction; they are counted, not reconciled.
+     *
+     * @param  array<string, string>  $original
+     */
+    private function isFreeText(array $original, ColumnMapping $mapping): bool
+    {
+        if (array_intersect_key($original, array_flip(['reference', 'amount', 'debit', 'credit'])) !== []) {
+            return false;
+        }
+
+        $date = $original[Field::Date->value] ?? null;
+
+        return $date === null || $this->dates->parse($date, $mapping->dateOrder)->date === null;
     }
 
     /**

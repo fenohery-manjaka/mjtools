@@ -132,6 +132,20 @@ class MappingTest extends TestCase
         $this->assertSame(1, $built->ignoredTextRows);
     }
 
+    public function test_builder_ignores_free_text_written_in_the_date_column(): void
+    {
+        $table = $this->table("Date,Ref,Amount\n01/08/2026,INV-1,10.00\nThank you for your business.,,\n31/02/2026,,\n02/08/2026,,\n");
+        $mapping = new ColumnMapping(0, ['date' => 0, 'reference' => 1, 'amount' => 2]);
+
+        $built = (new TransactionBuilder)->build($table, $mapping, Side::Statement);
+
+        // A footer sentence and an impossible date alone carry no transaction.
+        $this->assertSame(2, $built->ignoredTextRows);
+        // A readable date alone may be a real line with a missing amount: it stays visible.
+        $this->assertCount(2, $built->transactions);
+        $this->assertNull($built->transactions[1]->amount);
+    }
+
     public function test_builder_reports_unreadable_values(): void
     {
         $table = $this->table("Ref,Date,Amount\nINV-1,31/02/2026,abc\n");
