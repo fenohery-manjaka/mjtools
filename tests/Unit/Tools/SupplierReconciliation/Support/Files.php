@@ -50,6 +50,33 @@ final class Files
         return $path;
     }
 
+    /**
+     * A workbook with several sheets, in order.
+     *
+     * @param  array<string, list<list<string|int|float|null>>>  $sheets  Sheet name => rows.
+     */
+    public static function workbook(array $sheets): string
+    {
+        $path = self::path('xlsx');
+        $writer = new Writer;
+        $writer->openToFile($path);
+        $first = true;
+
+        foreach ($sheets as $name => $rows) {
+            $sheet = $first ? $writer->getCurrentSheet() : $writer->addNewSheetAndMakeItCurrent();
+            $sheet->setName($name);
+            $first = false;
+
+            foreach ($rows as $values) {
+                $writer->addRow(new Row(array_map(fn ($value): Cell => Cell::fromValue($value), $values)));
+            }
+        }
+
+        $writer->close();
+
+        return $path;
+    }
+
     public static function cleanup(): void
     {
         foreach (self::$created as $path) {

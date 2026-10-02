@@ -11,11 +11,13 @@ final readonly class RawTable
     /**
      * @param  list<list<string>>  $rows
      * @param  array<string, string>  $details  Format details shown to the user (delimiter, encoding, sheet).
+     * @param  list<string>  $sheets  Every sheet of a workbook, in order (empty for CSV).
      */
     public function __construct(
         public FileFormat $format,
         public array $rows,
         public array $details = [],
+        public array $sheets = [],
     ) {}
 
     public function columnCount(): int
@@ -28,7 +30,7 @@ final readonly class RawTable
      */
     public function toArray(): array
     {
-        return ['format' => $this->format->value, 'rows' => $this->rows, 'details' => $this->details];
+        return ['format' => $this->format->value, 'rows' => $this->rows, 'details' => $this->details, 'sheets' => $this->sheets];
     }
 
     /**
@@ -43,6 +45,7 @@ final readonly class RawTable
                 (array) $data['rows'],
             )),
             details: array_map('strval', (array) ($data['details'] ?? [])),
+            sheets: array_values(array_map('strval', (array) ($data['sheets'] ?? []))),
         );
     }
 }

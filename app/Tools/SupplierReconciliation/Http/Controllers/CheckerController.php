@@ -3,13 +3,17 @@
 namespace App\Tools\SupplierReconciliation\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Tools\SupplierReconciliation\Domain\Side;
 use App\Tools\SupplierReconciliation\Runs\ReconciliationRun;
 use App\Tools\SupplierReconciliation\Runs\RunAccess;
+use App\Tools\SupplierReconciliation\Runs\RunFiles;
+use App\Tools\SupplierReconciliation\Runs\SampleFiles;
 use App\Tools\SupplierReconciliation\Runs\UsageLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class CheckerController extends Controller
 {
@@ -32,6 +36,31 @@ class CheckerController extends Controller
         UsageLog::record('run_created', $run);
 
         return to_route('supplier-reconciliation.files.edit', $run);
+    }
+
+    /**
+     * Starts a run with the fictional sample files, through the same import
+     * path as an upload.
+     */
+    public function sample(Request $request, RunFiles $files): RedirectResponse
+    {
+        $run = $this->access->create($request);
+
+        foreach (Side::cases() as $side) {
+            $path = SampleFiles::path($side);
+            $files->attach($run, $side, $path, SampleFiles::name($side), (int) filesize($path), sample: true);
+        }
+
+        UsageLog::record('sample_loaded', $run);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Sample files loaded: a fictional supplier and ledger.']);
+
+        return to_route('supplier-reconciliation.files.edit', $run);
+    }
+
+    public function sampleFile(Side $side): BinaryFileResponse
+    {
+        return response()->download(SampleFiles::path($side), SampleFiles::name($side), ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
     public function destroy(Request $request, ReconciliationRun $run): RedirectResponse

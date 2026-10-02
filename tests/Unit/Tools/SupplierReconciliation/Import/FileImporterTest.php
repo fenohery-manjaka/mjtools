@@ -8,6 +8,7 @@ use App\Tools\SupplierReconciliation\Import\HeaderDetector;
 use App\Tools\SupplierReconciliation\Import\ImportedTable;
 use App\Tools\SupplierReconciliation\Import\ImportException;
 use App\Tools\SupplierReconciliation\Import\ImportLimits;
+use App\Tools\SupplierReconciliation\Import\RawTable;
 use DateTimeImmutable;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -92,6 +93,57 @@ class FileImporterTest extends TestCase
         $this->assertSame(['Invoice No.', 'Date', 'Amount'], $imported->headers);
         $this->assertSame(4, $imported->rows[0]['number']);
         $this->assertCount(3, $imported->rows);
+    }
+
+    public function test_the_sheet_holding_transactions_is_read_rather_than_a_cover_page(): void
+    {
+        $path = Files::workbook([
+            'Cover' => [['ACME Ltd'], ['Statement of account'], ['Prepared by accounts receivable']],
+            'Summary' => [['Total due', 1340.5]],
+            'Lines' => [['Date', 'Ref', 'Amount'], ['01/08/2026', 'INV-1', 1240], ['15/08/2026', 'INV-2', 100.5]],
+        ]);
+
+        $table = (new FileImporter)->import($path);
+
+        $this->assertSame('INV-1', $table->rows[1][1]);
+        $this->assertSame('Lines (3 of 3)', $table->details['sheet']);
+        $this->assertSame(['Cover', 'Summary', 'Lines'], $table->sheets);
+        $this->assertEquals($table, RawTable::fromArray($table->toArray()));
+    }
+
+    public function test_a_requested_sheet_is_read_and_an_unknown_one_is_refused(): void
+    {
+        $path = Files::workbook([
+            'August' => [['Date', 'Ref', 'Amount'], ['01/08/2026', 'INV-1', 10]],
+            'September' => [['Date', 'Ref', 'Amount'], ['01/09/2026', 'INV-9', 90], ['02/09/2026', 'INV-10', 5]],
+        ]);
+
+        $this->assertSame('INV-9', (new FileImporter)->import($path)->rows[1][1]);
+        $this->assertSame('INV-1', (new FileImporter)->import($path, 'August')->rows[1][1]);
+
+        $this->expectException(ImportException::class);
+        $this->expectExceptionMessage('no sheet with this name');
+        (new FileImporter)->import($path, 'October');
+    }
+
+    public function test_a_sheet_over_the_row_limit_is_skipped_when_another_one_fits(): void
+    {
+        $big = [['Date', 'Ref', 'Amount']];
+
+        for ($i = 1; $i <= 12; $i++) {
+            $big[] = ['01/08/2026', "OLD-{$i}", $i];
+        }
+
+        $path = Files::workbook([
+            'Archive' => $big,
+            'Current' => [['Date', 'Ref', 'Amount'], ['01/09/2026', 'INV-1', 10]],
+        ]);
+        $importer = new FileImporter(new ImportLimits(maxRows: 5));
+
+        $this->assertSame('INV-1', $importer->import($path)->rows[1][1]);
+
+        $this->expectException(ImportException::class);
+        $importer->import($path, 'Archive');
     }
 
     public function test_header_detection_skips_title_rows_in_csv(): void

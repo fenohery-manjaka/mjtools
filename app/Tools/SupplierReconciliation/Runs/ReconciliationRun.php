@@ -29,6 +29,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property array<string, mixed>|null $ledger_file
  * @property array<string, mixed>|null $ledger_table
  * @property array<string, mixed>|null $ledger_mapping
+ * @property string|null $currency ISO 4217 code confirmed for the whole reconciliation.
  * @property string|null $result Engine result as JSON lines (see ResultCodec), decoded on demand.
  * @property list<array<string, mixed>>|null $decisions
  * @property CarbonImmutable|null $reconciled_at

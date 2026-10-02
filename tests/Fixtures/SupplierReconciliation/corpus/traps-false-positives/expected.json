@@ -1,0 +1,39 @@
+{
+    "description": "Plain CSV files built to tempt false automatic matches: near-identical references, a reference reused a year later, a credit note numbered like an invoice, identical amounts in crossed order, ambiguous candidates, generic references, a decimal error and a duplicate on the statement.",
+    "currency": "EUR",
+    "balance": "unavailable",
+    "pairs": [
+        [[5], [6]],
+        [[6], [5]],
+        [[8], [9]],
+        [[9], [10]],
+        [[10], [11]]
+    ],
+    "expect": {
+        "statement": {
+            "2": "possible_match",
+            "3": "possible_match",
+            "4": "missing_in_ledger",
+            "5": "matched",
+            "6": "matched",
+            "7": "ambiguous",
+            "8": "possible_match",
+            "9": "amount_mismatch",
+            "10": "matched",
+            "11": "duplicate_suspected",
+            "12": "duplicate_suspected",
+            "13": "possible_match"
+        },
+        "ledger": {
+            "4": "ledger_only"
+        }
+    },
+    "notes": {
+        "statement 2 / ledger 2": "INV-100 and INV-1000 are different documents with the same amount: at most a proposal.",
+        "statement 3 / ledger 3": "INV-2001 reused one year later: the date gap forbids an automatic match.",
+        "statement 4 / ledger 4": "CN-3001 (credit) and INV-3001 (invoice) share a number, not a document.",
+        "statement 7": "Two ledger lines can be INV-5001: the engine must not choose.",
+        "statement 8 / ledger 9": "PAYMENT is not an identifying reference: never automatic.",
+        "statement 13 / ledger 13": "INV-1010 and INV-1001 differ by a transposition: at most a proposal."
+    }
+}

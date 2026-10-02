@@ -1,0 +1,31 @@
+{
+    "description": "Business Central style vendor ledger with an internal 'Document No.' (PI-001842) next to the supplier's 'External Document No.' (KIS-24581), invoices as negative amounts and a 'Remaining Amount' column; the statement has a per-document 'Outstanding' column that is not a running balance.",
+    "currency": "EUR",
+    "balance": "unavailable",
+    "pairs": [
+        [[5], [2]],
+        [[6], [3]],
+        [[7], [4]],
+        [[8], [5]],
+        [[9], [6]],
+        [[11], [7]]
+    ],
+    "expect": {
+        "statement": {
+            "5": "matched",
+            "6": "matched",
+            "7": "matched",
+            "8": "matched",
+            "9": "amount_mismatch",
+            "10": "missing_in_ledger",
+            "11": "matched"
+        },
+        "ledger": {
+            "8": "ledger_only"
+        }
+    },
+    "notes": {
+        "reference column": "The statement uses the supplier's numbers: the ledger's External Document No. column must be chosen over the internal Document No.",
+        "balance": "'Outstanding' is per document: it must not be read as a running balance (no false inconsistency)."
+    }
+}

@@ -9,17 +9,17 @@ const symbols: Record<
 > = {
     agrees: {
         mark: '✓',
-        class: 'text-emerald-600 dark:text-emerald-400',
+        class: 'text-success',
         label: 'agrees',
     },
     partial: {
         mark: '~',
-        class: 'text-amber-600 dark:text-amber-400',
+        class: 'text-warning-strong',
         label: 'partly agrees',
     },
     differs: {
         mark: '✗',
-        class: 'text-rose-600 dark:text-rose-400',
+        class: 'text-danger',
         label: 'differs',
     },
     info: { mark: 'i', class: 'text-muted-foreground', label: 'information' },
@@ -27,7 +27,7 @@ const symbols: Record<
 </script>
 
 <template>
-    <ul class="space-y-1 text-sm">
+    <ul class="space-y-1.5 text-sm">
         <li
             v-for="(reason, index) in reasons"
             :key="`${reason.code}-${index}`"

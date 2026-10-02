@@ -18,7 +18,7 @@ final class AmountParser
 
     private const MAX_DECIMALS = 4;
 
-    private const CURRENCY_CODES = 'EUR|USD|GBP|CHF|CAD|AUD|NZD|JPY|CNY|HKD|SGD|INR|ZAR|SEK|NOK|DKK|PLN|CZK|HUF|RON|MGA|MUR|XOF|XAF|MAD|TND|AED';
+    private const CURRENCY_CODES = CurrencyDetector::CODE_PATTERN;
 
     public function parse(?string $raw, ?DecimalSeparator $separator = null): ParsedAmount
     {
@@ -121,7 +121,7 @@ final class AmountParser
         $value = trim($value);
 
         // Currency symbols and ISO codes around the number.
-        $value = preg_replace('/[€$£¥₹]|\b(?:'.self::CURRENCY_CODES.')\b/iu', '', $value) ?? $value;
+        $value = preg_replace('/(?:US|NZ|HK|R|A|C|S)?\$|[€£¥₹]|\b(?:'.self::CURRENCY_CODES.')\b/iu', '', $value) ?? $value;
 
         return trim($value);
     }

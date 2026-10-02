@@ -33,6 +33,8 @@ class AmountParserTest extends TestCase
             'euro symbol' => ['€1,240.00', null, '1240.00'],
             'euro symbol after' => ['1 240,00 €', null, '1240.00'],
             'currency code' => ['EUR 1,240.00', null, '1240.00'],
+            'us dollar symbol' => ['US$1,240.00', null, '1240.00'],
+            'brazilian real symbol' => ['R$ 1.240,00', null, '1240.00'],
             'large amount' => ['1,234,567.89', null, '1234567.89'],
             'explicit comma column resolves ambiguity' => ['1,240', DecimalSeparator::Comma, '1.24'],
             'explicit dot column resolves grouping' => ['1,240', DecimalSeparator::Dot, '1240.00'],

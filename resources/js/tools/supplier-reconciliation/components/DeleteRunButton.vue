@@ -23,7 +23,7 @@ function confirmDeletion(): boolean {
             type="submit"
             variant="ghost"
             size="sm"
-            class="text-muted-foreground"
+            class="text-muted-foreground hover:text-danger"
             :disabled="processing"
         >
             <Trash2 />

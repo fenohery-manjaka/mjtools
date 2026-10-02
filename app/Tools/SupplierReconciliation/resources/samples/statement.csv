@@ -1,0 +1,22 @@
+Harbour Lane Office Supplies Ltd
+Statement of account
+Customer: Example Trading Co. - Account EX-0042
+Period: 01/08/2026 to 31/08/2026
+
+Date,Type,Reference,Description,Amount (GBP)
+01/08/2026,,,Balance brought forward,"2,150.00"
+03/08/2026,Invoice,INV-004581,Copy paper A4 (40 boxes),"1,240.00"
+05/08/2026,Invoice,INV-004582,Toner cartridges,318.50
+07/08/2026,Invoice,INV-004583,Office chairs (5),"2,075.00"
+10/08/2026,Payment,PAY-88120,Payment received - thank you,"-2,150.00"
+12/08/2026,Invoice,INV-004588,Desk lamps (12),564.00
+14/08/2026,Invoice,INV-004590,Whiteboard markers,96.10
+18/08/2026,Credit note,CN-00824,Returned office chair,-415.00
+21/08/2026,Invoice,INV-004596,Filing cabinets (2),"1,180.00"
+24/08/2026,Invoice,INV-004601,Printer paper A3,212.40
+27/08/2026,Invoice,INV-004605,Coffee supplies,145.00
+29/08/2026,Invoice,INV-004609,Ergonomic keyboards (10),890.00
+30/08/2026,Invoice,INV-004612,Network cables,75.00
+31/08/2026,,,Closing balance,"6,381.00"
+
+Thank you for your business. Payment terms: 30 days.

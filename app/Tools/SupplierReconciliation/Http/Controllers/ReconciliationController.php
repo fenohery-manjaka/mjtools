@@ -5,6 +5,8 @@ namespace App\Tools\SupplierReconciliation\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Tools\SupplierReconciliation\Domain\Side;
 use App\Tools\SupplierReconciliation\Http\Presenters\RunPresenter;
+use App\Tools\SupplierReconciliation\Interest\InterestResponse;
+use App\Tools\SupplierReconciliation\Mapping\BalanceCheck;
 use App\Tools\SupplierReconciliation\Mapping\PreflightCheck;
 use App\Tools\SupplierReconciliation\Mapping\PreparedSide;
 use App\Tools\SupplierReconciliation\Matching\ReconciliationEngine;
@@ -37,7 +39,7 @@ class ReconciliationController extends Controller
 
         return Inertia::render('tools/supplier-reconciliation/Check', [
             'run' => $this->presenter->run($run),
-            'report' => $check->check(...$prepared),
+            'report' => $check->check(...$prepared, currency: $run->currency),
         ]);
     }
 
@@ -56,7 +58,7 @@ class ReconciliationController extends Controller
             return to_route('supplier-reconciliation.files.edit', $run);
         }
 
-        $report = (new PreflightCheck)->check(...$prepared);
+        $report = (new PreflightCheck)->check(...$prepared, currency: $run->currency);
 
         if (! $report['ready']) {
             UsageLog::record('reconciliation_blocked', $run, ['problems' => count($report['blocking'])]);
@@ -87,10 +89,30 @@ class ReconciliationController extends Controller
             return to_route('supplier-reconciliation.check', $run);
         }
 
+        $statement = $run->prepared(Side::Statement);
+
         return Inertia::render('tools/supplier-reconciliation/Summary', [
             'run' => $this->presenter->run($run),
             'summary' => $reviewed->summary(),
+            'balance' => $statement === null ? null : (new BalanceCheck)->check($statement->built->transactions, $statement->built->runningBalances),
+            'intent' => [
+                'sent' => (bool) $request->session()->get(InterestController::SESSION_KEY, false),
+                'price' => (string) config('supplier-reconciliation.paid_intent.price'),
+                'suppliers_per_month' => $this->options(InterestResponse::SUPPLIERS_PER_MONTH),
+                'accounting_software' => $this->options(InterestResponse::ACCOUNTING_SOFTWARE),
+                'price_answers' => $this->options(InterestResponse::PRICE_ANSWERS),
+                'wanted_next' => $this->options(InterestResponse::WANTED_NEXT),
+            ],
         ]);
+    }
+
+    /**
+     * @param  array<string, string>  $labels
+     * @return list<array{value: string, label: string}>
+     */
+    private function options(array $labels): array
+    {
+        return array_map(fn (string $value, string $label): array => ['value' => $value, 'label' => $label], array_keys($labels), $labels);
     }
 
     /**

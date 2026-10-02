@@ -19,6 +19,8 @@ class UploadFileRequest extends FormRequest
                 'max:'.(int) config('supplier-reconciliation.limits.max_file_kilobytes'),
                 'extensions:csv,txt,tsv,xlsx',
             ],
+            // Worksheet to read in a workbook (Excel limits names to 31 characters).
+            'sheet' => ['nullable', 'string', 'max:31'],
         ];
     }
 

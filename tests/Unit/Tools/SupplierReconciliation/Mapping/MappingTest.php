@@ -132,6 +132,74 @@ class MappingTest extends TestCase
         $this->assertSame(1, $built->ignoredTextRows);
     }
 
+    public function test_builder_ignores_free_text_written_in_the_date_column(): void
+    {
+        $table = $this->table("Date,Ref,Amount\n01/08/2026,INV-1,10.00\nThank you for your business.,,\n31/02/2026,,\n02/08/2026,,\n");
+        $mapping = new ColumnMapping(0, ['date' => 0, 'reference' => 1, 'amount' => 2]);
+
+        $built = (new TransactionBuilder)->build($table, $mapping, Side::Statement);
+
+        // A footer sentence and an impossible date alone carry no transaction.
+        $this->assertSame(2, $built->ignoredTextRows);
+        // A readable date alone may be a real line with a missing amount: it stays visible.
+        $this->assertCount(2, $built->transactions);
+        $this->assertNull($built->transactions[1]->amount);
+    }
+
+    public function test_charges_and_payments_columns_are_read_as_debit_and_credit(): void
+    {
+        $table = $this->table("Date,Invoice #,Description,Charges,Payments,Balance\n09/03/2026,10457,Paper,\"$1,240.00\",,\"$1,240.00\"\n09/08/2026,,Payment,,\"$1,000.00\",$240.00\n09/12/2026,10471,Toner,$918.60,,\"$1,158.60\"\n");
+
+        foreach ([Side::Statement, Side::Ledger] as $side) {
+            $mapping = (new ColumnDetector)->suggest($table, $side, 0);
+
+            $this->assertSame(AmountMode::DebitCredit, $mapping->amountMode);
+            $this->assertSame(3, $mapping->column(Field::Debit));
+            $this->assertSame(4, $mapping->column(Field::Credit));
+            $this->assertSame(5, $mapping->column(Field::Balance));
+            // Charges are invoices whatever the file.
+            $this->assertSame(ColumnMapping::INVOICES_IN_DEBIT, $mapping->invoiceColumn);
+        }
+    }
+
+    public function test_group_totals_are_set_aside_only_without_reference_or_date(): void
+    {
+        $table = $this->table(",Date,Num,Memo,Amount\nACME Ltd,,,,\n,03/09/2026,10457,Paper,100.00\nTotal for ACME Ltd,,,,100.00\n,04/09/2026,10460,Total for project Alpha,50.00\n");
+        $mapping = new ColumnMapping(0, ['date' => 1, 'reference' => 2, 'description' => 3, 'amount' => 4]);
+
+        $built = (new TransactionBuilder)->build($table, $mapping, Side::Ledger);
+
+        $this->assertCount(3, $built->transactions);
+        $this->assertTrue($built->transactions[1]->isBalanceLine);
+        // A document whose description starts like a total is never hidden.
+        $this->assertFalse($built->transactions[2]->isBalanceLine);
+    }
+
+    public function test_balance_wording_keeps_a_line_without_amount_or_date(): void
+    {
+        $table = $this->table("Date,Ref,Description,Amount,Balance\n01/09/2026,INV-1,Bricks,100.00,100.00\n,,Amount Due,,100.00\n,,Thank you,,\n");
+        $mapping = new ColumnMapping(0, ['date' => 0, 'reference' => 1, 'description' => 2, 'amount' => 3, 'balance' => 4]);
+
+        $built = (new TransactionBuilder)->build($table, $mapping, Side::Statement);
+
+        $this->assertCount(2, $built->transactions);
+        $this->assertTrue($built->transactions[1]->isBalanceLine);
+        $this->assertSame(1, $built->ignoredTextRows);
+        $this->assertSame('100.00', $built->runningBalances[3]->toDecimal());
+    }
+
+    public function test_headers_repeated_after_a_page_break_are_ignored(): void
+    {
+        $table = $this->table("Date,Ref,Description,Amount\n01/09/2026,INV-1,Bricks,100.00\nDate,Ref,Description,Amount\n02/09/2026,INV-2,Sand,50.00\n");
+        $mapping = new ColumnMapping(0, ['date' => 0, 'reference' => 1, 'description' => 2, 'amount' => 3]);
+
+        $built = (new TransactionBuilder)->build($table, $mapping, Side::Statement);
+
+        $this->assertCount(2, $built->transactions);
+        $this->assertSame(1, $built->ignoredTextRows);
+        $this->assertSame([], $built->rowIssues);
+    }
+
     public function test_builder_reports_unreadable_values(): void
     {
         $table = $this->table("Ref,Date,Amount\nINV-1,31/02/2026,abc\n");
@@ -166,7 +234,7 @@ class MappingTest extends TestCase
         $statement = $this->prepare(Side::Statement, "Ref,Date,Amount\nINV-1,13/08/2026,10.00\nINV-2,14/08/2026,20.00\n", ['reference' => 0, 'date' => 1, 'amount' => 2]);
         $ledger = $this->prepare(Side::Ledger, "Ref,Date,Amount\nINV-1,13/08/2026,10.00\n", ['reference' => 0, 'date' => 1, 'amount' => 2]);
 
-        $report = (new PreflightCheck)->check($statement, $ledger);
+        $report = (new PreflightCheck)->check($statement, $ledger, 'EUR');
 
         $this->assertTrue($report['ready'], implode("\n", $report['blocking']));
         $this->assertSame(2, $report['sides']['statement']['transactions']);
@@ -178,7 +246,7 @@ class MappingTest extends TestCase
         $statement = $this->prepare(Side::Statement, "Ref,Date,Amount\nINV-1,13/08/2026,abc\nINV-2,14/08/2026,xyz\n", ['reference' => 0, 'date' => 1, 'amount' => 2]);
         $ledger = $this->prepare(Side::Ledger, "Ref,Date,Amount\nINV-1,13/08/2026,10.00\n", ['date' => 1, 'amount' => 2]);
 
-        $report = (new PreflightCheck)->check($statement, $ledger);
+        $report = (new PreflightCheck)->check($statement, $ledger, 'EUR');
 
         $this->assertFalse($report['ready']);
         $this->assertCount(2, $report['blocking']);
@@ -191,7 +259,7 @@ class MappingTest extends TestCase
         $statement = $this->prepare(Side::Statement, "Ref,Amount\nINV-1,10.00\n", ['reference' => 0, 'amount' => 1, 'description' => 1]);
         $ledger = $this->prepare(Side::Ledger, "Ref,Amount\nINV-1,10.00\n", ['reference' => 0, 'amount' => 1]);
 
-        $this->assertFalse((new PreflightCheck)->check($statement, $ledger)['ready']);
+        $this->assertFalse((new PreflightCheck)->check($statement, $ledger, 'EUR')['ready']);
     }
 
     public function test_preflight_suggests_inverting_the_ledger_sign(): void
@@ -200,7 +268,7 @@ class MappingTest extends TestCase
         $statement = $this->prepare(Side::Statement, sprintf($rows, '', '', ''), ['reference' => 0, 'date' => 1, 'amount' => 2]);
         $ledger = $this->prepare(Side::Ledger, sprintf($rows, '-', '-', '-'), ['reference' => 0, 'date' => 1, 'amount' => 2]);
 
-        $report = (new PreflightCheck)->check($statement, $ledger);
+        $report = (new PreflightCheck)->check($statement, $ledger, 'EUR');
 
         $this->assertTrue($report['suggest_inverting_ledger_sign']);
         $this->assertTrue($report['ready']);
@@ -212,11 +280,11 @@ class MappingTest extends TestCase
         $statement = $this->prepare(Side::Statement, "Ref,Amount\nINV-1,10.00\n", ['reference' => 0, 'amount' => 1]);
         $ledger = $this->prepare(Side::Ledger, $csv, ['reference' => 0, 'supplier' => 1, 'amount' => 2]);
 
-        $warnings = implode("\n", (new PreflightCheck)->check($statement, $ledger)['warnings']);
+        $warnings = implode("\n", (new PreflightCheck)->check($statement, $ledger, 'EUR')['warnings']);
         $this->assertStringContainsString('2 different suppliers', $warnings);
 
         $filtered = PreparedSide::prepare(Side::Ledger, $this->table($csv), new ColumnMapping(0, ['reference' => 0, 'supplier' => 1, 'amount' => 2], supplierFilter: 'ACME'));
-        $this->assertStringNotContainsString('different suppliers', implode("\n", (new PreflightCheck)->check($statement, $filtered)['warnings']));
+        $this->assertStringNotContainsString('different suppliers', implode("\n", (new PreflightCheck)->check($statement, $filtered, 'EUR')['warnings']));
     }
 
     public function test_preflight_warns_about_ambiguous_dates(): void
@@ -224,7 +292,7 @@ class MappingTest extends TestCase
         $statement = $this->prepare(Side::Statement, "Ref,Date,Amount\nINV-1,01/02/2026,10.00\n", ['reference' => 0, 'date' => 1, 'amount' => 2]);
         $ledger = $this->prepare(Side::Ledger, "Ref,Date,Amount\nINV-1,01/02/2026,10.00\n", ['reference' => 0, 'date' => 1, 'amount' => 2]);
 
-        $warnings = implode("\n", (new PreflightCheck)->check($statement, $ledger)['warnings']);
+        $warnings = implode("\n", (new PreflightCheck)->check($statement, $ledger, 'EUR')['warnings']);
 
         $this->assertStringContainsString('could be read day-first or month-first', $warnings);
     }

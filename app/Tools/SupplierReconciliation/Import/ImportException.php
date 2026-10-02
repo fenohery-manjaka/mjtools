@@ -29,6 +29,12 @@ final class ImportException extends RuntimeException
         return new self("This file has more than {$maxColumns} columns. Please export only the useful columns.");
     }
 
+    public static function sheetNotFound(): self
+    {
+        // The sheet name is not repeated: import messages reach the usage logs.
+        return new self('The workbook has no sheet with this name. Choose one of its sheets.');
+    }
+
     public static function corrupted(): self
     {
         return new self('This file appears to be corrupted and could not be read.');

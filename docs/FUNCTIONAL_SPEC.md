@@ -1,9 +1,33 @@
 # CAHIER DES CHARGES FONCTIONNEL
-## Supplier Statement Reconciliation Checker
+
+## Supplier Reconciliation — Free Checker et produit récurrent
 
 **Statut :** Document fonctionnel de référence  
-**Produit :** Free Supplier Statement Reconciliation Checker  
-**Évolution visée :** SaaS automatisé de rapprochement des relevés fournisseurs
+**Porte d'entrée :** Free Supplier Statement Reconciliation Checker  
+**Premier produit payant :** workflow récurrent de rapprochement par client et fournisseur  
+**Évolution visée :** automatisation progressive centrée sur les exceptions
+
+---
+
+# 0. POSITIONNEMENT DE MJTOOLS
+
+`mjtools` n'est pas une plateforme réservée aux équipes financières. C'est un socle modulaire
+destiné à accueillir plusieurs outils indépendants, potentiellement dans des domaines différents.
+
+Chaque outil doit :
+
+- résoudre un problème concret et suffisamment pénible ;
+- pouvoir être essayé en self-service ;
+- apporter une valeur réelle dans sa version gratuite ;
+- être distribuable sans dépendre d'une prospection commerciale lourde ;
+- ne devenir un SaaS plus complet que si l'usage réel confirme un besoin récurrent.
+
+Le rapprochement des relevés fournisseurs est le **premier pari produit** de mjtools. Il ne définit
+pas à lui seul le positionnement futur de toute la plateforme.
+
+Le Checker gratuit est la porte d'entrée et la preuve de compétence. Le produit commercial visé
+n'est pas un simple comparateur ponctuel : c'est un workflow qui mémorise le contexte de chaque
+client et fournisseur afin d'éviter de refaire le même travail à chaque période.
 
 ---
 
@@ -38,15 +62,25 @@ Il doit privilégier la fiabilité :
 
 # 2. UTILISATEURS CIBLES
 
-## Utilisateur principal
+## Cible prioritaire
 
-Professionnel travaillant sur les comptes fournisseurs :
+La conception et la monétisation initiales ciblent en priorité :
 
-- comptable ;
-- bookkeeper ;
+> **Les bookkeepers indépendants, petits cabinets comptables et petites équipes Accounts Payable
+> qui traitent régulièrement environ 10 à 100 relevés fournisseurs par mois, sans vouloir une
+> solution enterprise lourde ni un projet d'intégration.**
+
+Ces utilisateurs sont prioritaires parce qu'ils répètent le même travail sur plusieurs fournisseurs
+et plusieurs périodes. Cette répétition crée la valeur d'un produit payant qui mémorise les mappings,
+les conventions et l'historique.
+
+Utilisateurs concernés :
+
+- bookkeeper indépendant ;
+- cabinet comptable traitant plusieurs clients ;
+- comptable fournisseurs ;
 - collaborateur Accounts Payable ;
-- responsable administratif/financier dans une petite structure ;
-- cabinet comptable traitant plusieurs clients.
+- responsable administratif/financier dans une petite structure.
 
 ## Entreprises pertinentes
 
@@ -106,11 +140,17 @@ Comparaison des deux sources afin de déterminer :
 
 ---
 
-# 4. PÉRIMÈTRE EXACT DE LA V1
+# 4. PÉRIMÈTRES PRODUIT
 
-La V1 est un **outil de rapprochement manuel self-service**.
+Les fonctionnalités sont volontairement séparées en trois périmètres. La vision finale ne constitue
+pas une liste à terminer avant de lancer ou de vendre.
 
-Elle permet :
+## Périmètre A — Free Checker à terminer et publier
+
+Le Free Checker est un **outil de rapprochement manuel self-service**, utilisable sans compte. Il
+doit démontrer la qualité du moteur sur des fichiers CSV/XLSX réels, y compris imparfaits.
+
+Il permet :
 
 1. d'importer un relevé fournisseur ;
 2. d'importer un export comptable ;
@@ -121,15 +161,62 @@ Elle permet :
 7. d'expliquer chaque résultat ;
 8. de permettre à l'utilisateur de vérifier les cas incertains ;
 9. de produire une synthèse ;
-10. d'exporter le résultat.
+10. d'exporter le résultat ;
+11. d'identifier ou confirmer une devise unique par rapprochement et de bloquer les incohérences ;
+12. de vérifier facultativement la cohérence d'un solde lorsque le fichier fournit les informations
+    nécessaires ;
+13. de mesurer, sans journaliser les données comptables, l'usage et les blocages du parcours.
 
-La V1 doit fonctionner sans connexion à Xero, QuickBooks ou un autre logiciel comptable.
+Le Free Checker doit fonctionner sans connexion à Xero, QuickBooks ou un autre logiciel comptable.
+Il ne doit pas être volontairement dégradé pour forcer une conversion.
+
+## Périmètre B — Premier produit payant minimal
+
+Le premier produit payant ne cherche pas encore à automatiser tout le processus. Il supprime la
+répétition la plus évidente entre deux périodes.
+
+Il comprend exactement :
+
+1. un compte utilisateur et un espace de travail ;
+2. une organisation simple `client → fournisseur` ;
+3. la possibilité d'enregistrer, après un rapprochement réussi, le fournisseur et son mapping ;
+4. la mémorisation de la devise, des colonnes et des conventions de lecture ;
+5. la proposition du mapping précédent lors de la période suivante ;
+6. la détection d'un changement de structure avant de réutiliser un mapping ;
+7. un historique simple des rapprochements et exports ;
+8. la possibilité de reprendre un rapprochement ;
+9. la facturation, les quotas et la suppression des données ;
+10. les garanties minimales de sécurité nécessaires à la conservation de données comptables.
+
+Le scénario de vente à valider est :
+
+> **J'ai configuré ce fournisseur le mois dernier. Ce mois-ci, mjtools reconnaît son format et je
+> ne repars pas de zéro.**
+
+## Périmètre C — Après validation commerciale
+
+Ces capacités ne sont construites qu'après confirmation d'un usage récurrent ou de premiers
+paiements :
+
+1. traitement batch de plusieurs fournisseurs ;
+2. continuité des exceptions entre périodes ;
+3. historique et dossier d'audit enrichis ;
+4. PDF texte avec validation de l'extraction ;
+5. réception des relevés par email ;
+6. OCR local pour les scans si la demande le justifie ;
+7. premières intégrations comptables choisies selon les usages observés ;
+8. fonctionnalités d'équipe et automatisations plus avancées.
+
+Le périmètre C décrit une direction, pas un engagement de livraison immédiat.
+
+Dans les sections techniques suivantes, toute mention historique de « V1 » désigne le périmètre A
+(Free Checker), sauf indication contraire.
 
 ---
 
 # 5. FORMATS ACCEPTÉS
 
-## V1
+## Free Checker
 
 Formats obligatoires :
 
@@ -138,9 +225,9 @@ Formats obligatoires :
 
 XLS peut éventuellement être accepté s'il n'ajoute pas une complexité disproportionnée.
 
-## Hors V1
+## Après validation
 
-Le PDF n'est **pas obligatoire en V1**.
+Le PDF n'est **pas obligatoire avant la publication et la validation du Free Checker**.
 
 Cela inclut :
 
@@ -281,7 +368,7 @@ Une seconde représentation peut être utilisée pour la comparaison.
 
 Exemples :
 
-` INV-004583 `
+`INV-004583`
 
 peut être normalisé pour permettre une comparaison avec :
 
@@ -700,18 +787,23 @@ Exemple :
 **347 transactions analyzed**
 
 ### 318
+
 Matched automatically
 
 ### 12
+
 Possible matches
 
 ### 9
+
 Missing in ledger
 
 ### 3
+
 Amount mismatches
 
 ### 5
+
 Need review
 
 Puis l'information principale :
@@ -1028,26 +1120,25 @@ Le gratuit comprend principalement :
 - rapprochement ;
 - résultats ;
 - revue des exceptions ;
-- export simple.
+- export simple ;
+- devise unique comme garde-fou ;
+- contrôle de cohérence du solde lorsqu'il est possible.
 
 Il ne faut pas volontairement rendre le rapprochement gratuit mauvais ou incomplet.
 
-## Payant = supprimer la répétition
+## Premier payant = se souvenir du travail précédent
 
-Le payant apportera progressivement :
+Le premier payant comprend uniquement le périmètre B défini au §4 : compte, clients et
+fournisseurs, mappings sauvegardés, détection des changements de format, historique simple,
+reprise et facturation.
 
-- compte ;
-- fournisseurs enregistrés ;
-- mappings sauvegardés ;
-- règles sauvegardées ;
-- historique ;
-- volumes supérieurs ;
-- traitement de plusieurs statements ;
-- équipes ;
-- audit ;
-- automatisations récurrentes ;
-- réception des statements ;
-- intégrations comptables.
+Il ne nécessite ni PDF, ni batch, ni intégration comptable pour être proposé et testé.
+
+## Après validation = automatiser davantage
+
+Le batch, la continuité des exceptions, le PDF, l'email et les intégrations appartiennent au
+périmètre C. Ils sont priorisés selon les demandes et comportements observés, pas parce qu'ils
+semblent intéressants isolément.
 
 La logique commerciale est :
 
@@ -1075,13 +1166,25 @@ C'est le moment naturel pour proposer la création d'un compte.
 
 Pas avant la preuve de valeur.
 
+Avant de construire tout le périmètre payant, ce CTA doit permettre de mesurer une intention réelle :
+
+- clic pour sauvegarder le fournisseur ;
+- adresse email ou création de compte ;
+- nombre de fournisseurs traités par mois ;
+- logiciel comptable utilisé ;
+- intérêt pour un prix présenté clairement.
+
 ---
 
 # 44. DIFFÉRENCIATION FONCTIONNELLE RECHERCHÉE
 
-La V1 ne cherchera pas à battre les plateformes existantes sur le nombre d'intégrations.
+Le produit ne cherchera pas à battre les plateformes enterprise sur le nombre d'intégrations.
 
-Elle doit chercher à être excellente sur quatre choses :
+Son identité fonctionnelle repose d'abord sur trois principes :
+
+> **Accepter les données imparfaites. Ne jamais masquer l'incertitude. Expliquer chaque résultat.**
+
+Il doit chercher à être excellent sur quatre choses :
 
 ### 1. Import extrêmement simple
 
@@ -1112,17 +1215,22 @@ La V1 ne doit pas :
 - décider quelle entreprise a raison lors d'un écart ;
 - masquer une anomalie incertaine ;
 - utiliser une IA générative pour décider arbitrairement des correspondances ;
+- dépendre d'une API d'IA payante pour son fonctionnement principal ;
 - prétendre qu'un score interne représente une probabilité comptable réelle.
 
 Le produit détecte et organise.
 
 L'humain reste responsable des cas nécessitant un jugement.
 
+La « mémoire » du produit payant désigne des mappings, règles et décisions structurés. Elle ne
+suppose ni machine learning ni appel à une IA externe. Des bibliothèques locales ou open source
+pourront être utilisées plus tard pour l'extraction documentaire, sans modifier ce principe.
+
 ---
 
-# 46. NON-V1
+# 46. HORS FREE CHECKER INITIAL
 
-Sont explicitement hors périmètre initial :
+Sont explicitement hors du périmètre A :
 
 - Xero ;
 - QuickBooks ;
@@ -1145,7 +1253,11 @@ Sont explicitement hors périmètre initial :
 - reporting financier général ;
 - automatisation des paiements.
 
-Ces fonctionnalités ne doivent pas entrer dans le produit simplement parce qu'elles semblent intéressantes.
+Les comptes, fournisseurs sauvegardés et mappings mémorisés appartiennent au premier payant (§4,
+périmètre B). Le batch, le PDF, l'email et les intégrations appartiennent au périmètre C.
+
+Ces fonctionnalités ne doivent pas entrer dans le Free Checker simplement parce qu'elles semblent
+intéressantes, et le périmètre C ne doit pas être traité comme un prérequis à la première vente.
 
 ---
 
@@ -1154,27 +1266,35 @@ Ces fonctionnalités ne doivent pas entrer dans le produit simplement parce qu'e
 Le moteur devra au minimum être évalué sur :
 
 ### Exact
+
 Même référence, montant et date.
 
 ### Format de référence
+
 `INV-123` ↔ `INV123`
 
 ### Casse
+
 `inv-123` ↔ `INV-123`
 
 ### Espaces
+
 `INV 123` ↔ `INV123`
 
 ### Zéros
+
 `INV-000123` ↔ `INV-123`
 
 ### Préfixe différent
+
 `INV-00123` ↔ `123`
 
 ### Montant formaté différemment
+
 `1 240,00` ↔ `1240.00`
 
 ### Date différente
+
 12/08 ↔ 13/08.
 
 ### Référence identique / montant différent
@@ -1253,7 +1373,12 @@ Observer :
 - utilisateurs consultant les exceptions ;
 - exports ;
 - utilisations répétées ;
-- demandes de sauvegarde/historique/automatisation.
+- clics sur « sauvegarder ce fournisseur » ;
+- créations de compte après un résultat ;
+- demandes de sauvegarde/historique/automatisation ;
+- nombre déclaré de fournisseurs traités par mois ;
+- intérêt pour le prix présenté ;
+- demandes de PDF, batch ou intégration, mesurées séparément.
 
 Ces données serviront à décider du SaaS payant.
 
@@ -1291,6 +1416,15 @@ Certains utilisateurs montrent naturellement qu'ils veulent :
 
 C'est ce dernier point qui valide particulièrement le futur SaaS.
 
+## Validation du premier payant
+
+Le périmètre B est validé lorsque des utilisateurs ayant terminé un vrai rapprochement acceptent de
+créer un compte et montrent une intention crédible de payer pour retrouver le fournisseur, son
+mapping et son historique à la période suivante.
+
+Le batch, le PDF ou une intégration ne doivent pas être utilisés pour masquer l'absence d'intérêt
+pour cette mémoire récurrente fondamentale.
+
 ---
 
 # 51. SIGNAUX D'ARRÊT OU DE REMISE EN QUESTION
@@ -1310,17 +1444,35 @@ Une simple difficulté technique ou un utilisateur insatisfait ne suffit pas à 
 
 ---
 
-# 52. ÉVOLUTION FONCTIONNELLE APRÈS VALIDATION
+# 52. PROGRESSION DES TROIS PÉRIMÈTRES
 
-Une fois le Checker validé, le produit peut progressivement passer de :
+La progression retenue est :
 
-> **outil de rapprochement**
+### A — Free Checker
+
+Deux fichiers, un rapprochement complet, des exceptions expliquées et un export.
+
+↓ validation de la valeur, de la confiance et de la récurrence
+
+### B — Premier payant
+
+Compte, client, fournisseur, mapping mémorisé, détection de dérive, historique simple et reprise.
+
+↓ premiers paiements et demandes observées
+
+### C — Automatisation progressive
+
+Batch, continuité des exceptions, PDF, email, OCR local et intégrations ciblées.
+
+Le produit passe ainsi de :
+
+> **outil de rapprochement ponctuel**
 
 à :
 
 > **système de rapprochement récurrent**
 
-puis :
+puis éventuellement à :
 
 > **automatisation du rapprochement fournisseur.**
 
@@ -1383,6 +1535,8 @@ L'utilisateur ouvre uniquement les 14 éléments.
 
 C'est la destination fonctionnelle du produit.
 
+Cette destination ne doit pas être confondue avec le périmètre nécessaire à la première vente.
+
 ---
 
 # 54. PRINCIPE DIRECTEUR DU PRODUIT
@@ -1397,15 +1551,20 @@ Le produit n'est pas conçu pour remplacer la comptabilité.
 
 Il est conçu pour éliminer le travail répétitif situé **entre le relevé fournisseur et la détection des anomalies comptables**.
 
+Une seconde question s'applique avant validation commerciale :
+
+> **Cette fonctionnalité est-elle nécessaire pour prouver la valeur ou obtenir le prochain signal
+> commercial, ou appartient-elle à une phase ultérieure ?**
+
 ---
 
-# 55. RÉSUMÉ DU PÉRIMÈTRE V1
+# 55. RÉSUMÉ DU PÉRIMÈTRE A — FREE CHECKER
 
 Nous construisons exactement :
 
 **Supplier Statement CSV/XLSX**
 
-+
+-
 
 **AP Ledger CSV/XLSX**
 
@@ -1444,3 +1603,37 @@ Nous construisons exactement :
 Le produit doit répondre à une seule promesse :
 
 > **Donnez-nous les deux côtés. Nous éliminons ce qui concorde et vous montrons uniquement ce qui mérite votre attention.**
+
+---
+
+# 56. RÉSUMÉ DU PÉRIMÈTRE B — PREMIER PAYANT
+
+Nous construisons après validation du Checker :
+
+**Rapprochement gratuit réussi**
+
+↓
+
+**Création de compte au moment de sauvegarder**
+
+↓
+
+**Client + fournisseur + mapping mémorisé**
+
+↓
+
+**Nouvelle période et nouveaux fichiers**
+
+↓
+
+**Réutilisation contrôlée du mapping + détection de changement de structure**
+
+↓
+
+**Nouveau rapprochement + historique + export**
+
+Le premier payant doit répondre à une seule promesse :
+
+> **Configurez ce fournisseur une fois. À la prochaine période, ne repartez pas de zéro.**
+
+Le batch, le PDF, l'email, l'OCR et les intégrations ne sont pas requis pour tester cette promesse.

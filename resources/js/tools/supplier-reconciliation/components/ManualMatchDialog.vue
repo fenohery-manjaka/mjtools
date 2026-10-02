@@ -124,10 +124,10 @@ function match(option: Transaction): void {
                 <div
                     v-for="option in choices"
                     :key="option.id"
-                    class="flex items-center justify-between gap-3 rounded-md border p-2 text-sm"
+                    class="hover:bg-accent/50 flex items-center justify-between gap-3 rounded-md border p-2.5 text-sm"
                 >
-                    <div class="min-w-0">
-                        <p class="truncate font-medium">
+                    <div class="min-w-0 flex-1">
+                        <p class="figure truncate font-medium">
                             {{ option.reference ?? '(no reference)' }}
                         </p>
                         <p class="text-muted-foreground text-xs">
@@ -142,7 +142,7 @@ function match(option: Transaction): void {
                             >
                         </p>
                     </div>
-                    <span class="font-semibold tabular-nums">{{
+                    <span class="figure w-28 shrink-0 text-right font-medium">{{
                         option.amount_normalized ?? '—'
                     }}</span>
                     <Button size="sm" @click="match(option)">Match</Button>

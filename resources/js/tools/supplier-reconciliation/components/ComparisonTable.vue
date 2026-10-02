@@ -10,9 +10,9 @@ const fieldLabels: Record<string, string> = {
 };
 
 const marks: Record<Polarity, { mark: string; class: string }> = {
-    agrees: { mark: '✓', class: 'text-emerald-600 dark:text-emerald-400' },
-    partial: { mark: '~', class: 'text-amber-600 dark:text-amber-400' },
-    differs: { mark: '✗', class: 'text-rose-600 dark:text-rose-400' },
+    agrees: { mark: '✓', class: 'text-success' },
+    partial: { mark: '~', class: 'text-warning-strong' },
+    differs: { mark: '✗', class: 'text-danger' },
     info: { mark: '–', class: 'text-muted-foreground' },
 };
 
@@ -27,7 +27,9 @@ function showNormalized(
 <template>
     <div class="overflow-x-auto">
         <table class="w-full text-left text-sm">
-            <thead class="text-muted-foreground text-xs">
+            <thead
+                class="text-muted-foreground text-xs tracking-[0.08em] uppercase"
+            >
                 <tr>
                     <th class="py-1 pr-3 font-medium">Field</th>
                     <th class="py-1 pr-3 font-medium">Supplier statement</th>
@@ -39,7 +41,7 @@ function showNormalized(
                 <tr
                     v-for="row in comparisons"
                     :key="row.field"
-                    class="border-t align-top"
+                    class="border-rule border-t align-top"
                 >
                     <td class="py-1.5 pr-3 font-medium">
                         {{ fieldLabels[row.field] }}

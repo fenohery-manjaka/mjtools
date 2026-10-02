@@ -12,6 +12,8 @@ enum Field: string
     case Type = 'type';
     case Description = 'description';
     case Supplier = 'supplier';
+    case Currency = 'currency';
+    case Balance = 'balance';
 
     public function label(): string
     {
@@ -24,6 +26,8 @@ enum Field: string
             self::Type => 'Type',
             self::Description => 'Description',
             self::Supplier => 'Supplier',
+            self::Currency => 'Currency',
+            self::Balance => 'Running balance',
         };
     }
 
@@ -38,6 +42,8 @@ enum Field: string
             self::Type => 'Optional: invoice, credit note, payment…',
             self::Description => 'Optional: shown for context only',
             self::Supplier => 'Optional: lets you keep only one supplier',
+            self::Currency => 'Optional: currency of each line (EUR, USD…)',
+            self::Balance => 'Optional: running balance, only used to check the statement total',
         };
     }
 }

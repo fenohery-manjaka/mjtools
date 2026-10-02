@@ -14,7 +14,7 @@ const props = defineProps<{
 const mapping = defineModel<MappingValues>({ required: true });
 
 const selectClass =
-    'border-input bg-background dark:bg-input/30 h-9 w-full rounded-md border px-2 text-sm shadow-xs focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none';
+    'border-input bg-background dark:bg-input/30 h-9 w-full rounded-md border px-2.5 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none';
 
 const visibleFields = computed(() =>
     props.data.fields.filter((field) => {
@@ -31,6 +31,21 @@ const visibleFields = computed(() =>
 );
 
 const required = ['reference', 'amount', 'debit', 'credit'];
+
+// The columns every reconciliation needs first, the optional ones apart.
+const main = ['reference', 'date', 'amount', 'debit', 'credit'];
+const groups = computed(() => [
+    {
+        title: 'Main columns',
+        fields: visibleFields.value.filter((field) => main.includes(field.key)),
+    },
+    {
+        title: 'Optional columns',
+        fields: visibleFields.value.filter(
+            (field) => !main.includes(field.key),
+        ),
+    },
+]);
 
 function samples(column: number | null | undefined): string[] {
     return column === null || column === undefined
@@ -64,10 +79,12 @@ function changeHeader(event: Event): void {
 </script>
 
 <template>
-    <section class="bg-background rounded-xl border p-5">
-        <div class="mb-4">
-            <h2 class="font-medium">{{ data.label }}</h2>
-            <p class="text-muted-foreground truncate text-sm">
+    <section class="bg-card rounded-xl border p-6 shadow-xs">
+        <div class="mb-5 border-b pb-4">
+            <h2 class="font-display text-xl font-semibold tracking-tight">
+                {{ data.label }}
+            </h2>
+            <p class="text-muted-foreground figure mt-0.5 truncate text-xs">
                 {{ data.file_name }}
             </p>
         </div>
@@ -91,15 +108,16 @@ function changeHeader(event: Event): void {
 
         <fieldset class="mb-5">
             <legend class="mb-2 text-sm font-medium">Amounts are in</legend>
-            <div class="flex flex-wrap gap-4 text-sm">
+            <div class="flex flex-wrap gap-2 text-sm">
                 <label
                     v-for="mode in data.options.amount_modes"
                     :key="mode.value"
-                    class="flex items-center gap-2"
+                    class="has-[:checked]:border-primary has-[:checked]:bg-accent has-[:focus-visible]:ring-ring/50 flex cursor-pointer items-center gap-2 rounded-md border px-3 py-1.5 has-[:focus-visible]:ring-[3px]"
                 >
                     <input
                         v-model="mapping.amount_mode"
                         type="radio"
+                        class="accent-primary"
                         :value="mode.value"
                     />
                     {{ mode.label }}
@@ -107,54 +125,67 @@ function changeHeader(event: Event): void {
             </div>
         </fieldset>
 
-        <div class="grid gap-4 sm:grid-cols-2">
-            <label
-                v-for="field in visibleFields"
-                :key="field.key"
-                class="block text-sm"
+        <template v-for="group in groups" :key="group.title">
+            <p
+                class="text-muted-foreground mt-6 mb-3 border-t pt-5 text-xs font-medium tracking-[0.14em] uppercase first-of-type:mt-0 first-of-type:border-t-0 first-of-type:pt-0"
             >
-                <span class="mb-1 block font-medium">
-                    {{ field.label }}
+                {{ group.title }}
+            </p>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <label
+                    v-for="field in group.fields"
+                    :key="field.key"
+                    class="block text-sm"
+                >
+                    <span class="mb-1 block font-medium">
+                        {{ field.label }}
+                        <span
+                            v-if="required.includes(field.key)"
+                            class="text-danger"
+                            title="Required"
+                            >*</span
+                        >
+                    </span>
+                    <select
+                        v-model="mapping.columns[field.key]"
+                        :class="selectClass"
+                    >
+                        <option :value="null">— Not used —</option>
+                        <option
+                            v-for="column in data.columns"
+                            :key="column.index"
+                            :value="column.index"
+                        >
+                            {{ column.letter }} · {{ column.name }}
+                        </option>
+                    </select>
+                    <span class="text-muted-foreground mt-1 block text-xs">
+                        {{ field.help }}
+                    </span>
                     <span
-                        v-if="required.includes(field.key)"
-                        class="text-rose-600"
-                        >*</span
+                        v-if="samples(mapping.columns[field.key]).length"
+                        class="mt-1 flex flex-wrap gap-1"
                     >
-                </span>
-                <select
-                    v-model="mapping.columns[field.key]"
-                    :class="selectClass"
-                >
-                    <option :value="null">— Not used —</option>
-                    <option
-                        v-for="column in data.columns"
-                        :key="column.index"
-                        :value="column.index"
-                    >
-                        {{ column.letter }} · {{ column.name }}
-                    </option>
-                </select>
-                <span class="text-muted-foreground mt-1 block text-xs">
-                    {{ field.help }}
-                </span>
-                <span
-                    v-if="samples(mapping.columns[field.key]).length"
-                    class="mt-1 flex flex-wrap gap-1"
-                >
-                    <code
-                        v-for="(sample, index) in samples(
-                            mapping.columns[field.key],
-                        )"
-                        :key="index"
-                        class="bg-muted rounded px-1.5 py-0.5 text-xs"
-                        >{{ sample }}</code
-                    >
-                </span>
-                <InputError :message="error(`columns.${field.key}`)" />
-            </label>
-        </div>
+                        <code
+                            v-for="(sample, index) in samples(
+                                mapping.columns[field.key],
+                            )"
+                            :key="index"
+                            class="bg-muted border-rule max-w-full truncate rounded border px-1.5 py-0.5 text-xs"
+                            >{{ sample }}</code
+                        >
+                    </span>
+                    <InputError :message="error(`columns.${field.key}`)" />
+                </label>
+            </div>
+        </template>
 
-        <div class="mt-6 grid gap-4 border-t pt-5 sm:grid-cols-2">
+        <p
+            class="text-muted-foreground mt-6 border-t pt-5 text-xs font-medium tracking-[0.14em] uppercase"
+        >
+            How to read the values
+        </p>
+        <div class="mt-3 grid gap-4 sm:grid-cols-2">
             <label
                 v-if="mapping.amount_mode === 'signed'"
                 class="block text-sm"
@@ -238,7 +269,7 @@ function changeHeader(event: Event): void {
                 <input
                     v-model="mapping.sign_from_type"
                     type="checkbox"
-                    class="mt-1"
+                    class="accent-primary mt-1"
                 />
                 <span>
                     Credit notes and payments are listed as positive amounts:

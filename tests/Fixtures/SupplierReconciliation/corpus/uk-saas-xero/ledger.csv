@@ -1,0 +1,6 @@
+Date,Source,Contact,Reference,Description,Debit,Credit,Running Balance
+06/06/2026,Payable Invoice,Northbeam Software Ltd,INV-2026-0106,Subscription,,49.00,-49.00
+05/07/2026,Payable Invoice,Northbeam Software Ltd,INV-2026-0107,Subscription,,49.00,-98.00
+05/08/2026,Payable Invoice,Northbeam Software Ltd,INV-2026-0180,Subscription,,49.00,-147.00
+13/08/2026,Payable Invoice,Northbeam Software Ltd,INV-2026-0115,Extra seats,,36.00,-183.00
+01/09/2026,Payable Payment,Northbeam Software Ltd,,Bank transfer Northbeam,147.00,,-36.00

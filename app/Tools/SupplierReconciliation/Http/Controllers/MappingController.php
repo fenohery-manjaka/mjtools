@@ -38,6 +38,7 @@ class MappingController extends Controller
                 'statement' => $this->presenter->mapping($run, Side::Statement),
                 'ledger' => $this->presenter->mapping($run, Side::Ledger),
             ],
+            'currency' => $this->presenter->currency($run),
         ]);
     }
 
@@ -73,6 +74,10 @@ class MappingController extends Controller
             $changed = $changed || $mapping->toArray() !== $current->toArray();
             $run->{"{$side->value}_mapping"} = $mapping->toArray();
         }
+
+        $currency = (string) $request->validated('currency');
+        $changed = $changed || $currency !== $run->currency;
+        $run->currency = $currency;
 
         if ($changed) {
             $run->discardResult();

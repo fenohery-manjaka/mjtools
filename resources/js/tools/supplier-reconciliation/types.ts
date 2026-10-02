@@ -10,6 +10,15 @@ export type Run = {
     reconciled: boolean;
     statement_name: string | null;
     ledger_name: string | null;
+    currency: string | null;
+};
+
+export type CurrencyChoice = {
+    value: string | null;
+    confirmed: boolean;
+    proposed: string | null;
+    message: string;
+    options: Option[];
 };
 
 export type Limits = {
@@ -23,6 +32,8 @@ export type FileSummary = {
     format: 'csv' | 'xlsx';
     format_label: string;
     details: Record<string, string>;
+    sample?: boolean;
+    sheets?: string[];
     rows: number;
     columns: number;
     header_row: number;
@@ -80,6 +91,7 @@ export type SideReport = {
     filtered_out: number;
     ignored_text_rows: number;
     conventions: string[];
+    currencies: { label: string; lines: number | null }[];
     row_issues: { row: number; issues: string[] }[];
 };
 
@@ -89,6 +101,27 @@ export type PreflightReport = {
     warnings: string[];
     sides: Record<Side, SideReport>;
     suggest_inverting_ledger_sign: boolean;
+    currency: string | null;
+    balance: BalanceResult;
+};
+
+export type BalanceResult = {
+    status: 'verified' | 'inconsistent' | 'unavailable';
+    opening: string | null;
+    movements: string | null;
+    expected: string | null;
+    closing: string | null;
+    difference: string | null;
+    message: string;
+};
+
+export type Intent = {
+    sent: boolean;
+    price: string;
+    suppliers_per_month: Option[];
+    accounting_software: Option[];
+    price_answers: Option[];
+    wanted_next: Option[];
 };
 
 export type AmountTotal = { count: number; total: string };

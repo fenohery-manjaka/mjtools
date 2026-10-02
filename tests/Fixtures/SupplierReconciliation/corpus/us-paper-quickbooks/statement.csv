@@ -1,0 +1,15 @@
+﻿Pacific Paper Co.
+Customer Statement
+Statement Date: 09/30/2026
+Bill To: Example Trading Inc. - Account 88-1203
+
+Date,Invoice #,PO #,Description,Charges,Payments,Balance
+09/01/2026,,,Previous Balance,,,"$4,250.00"
+09/03/2026,10457,PO-2231,Copy paper 20lb (40 cases),"$1,240.00",,"$5,490.00"
+09/08/2026,,,Payment - Check 5521,,"$4,250.00","$1,240.00"
+09/12/2026,10471,PO-2240,Toner HP 26A x6,$918.60,,"$2,158.60"
+09/15/2026,10472,PO-2240,Toner HP 26X x2,$412.00,,"$2,570.60"
+09/19/2026,CM-1088,,Credit memo - damaged carton,,$86.40,"$2,484.20"
+09/22/2026,10480,PO-2251,Cardstock 110lb,$265.25,,"$2,749.45"
+09/28/2026,10493,PO-2260,Envelopes #10 (5000),$154.80,,"$2,904.25"
+,,,Amount Due,,,"$2,904.25"

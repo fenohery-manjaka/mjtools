@@ -6,14 +6,14 @@ import SettingsLayout from '@/layouts/settings/Layout.vue';
 import ToolLayout from '@/layouts/ToolLayout.vue';
 import { initializeFlashToast } from '@/lib/flashToast';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+const appName = import.meta.env.VITE_APP_NAME || 'mjtools';
 
 void createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     layout: (name) => {
         switch (true) {
             case name === 'Welcome':
-                return null;
+                return ToolLayout;
             case name.startsWith('auth/'):
                 return AuthLayout;
             case name.startsWith('settings/'):
@@ -25,7 +25,7 @@ void createInertiaApp({
         }
     },
     progress: {
-        color: '#4B5563',
+        color: '#3b5b9a',
     },
 });
 

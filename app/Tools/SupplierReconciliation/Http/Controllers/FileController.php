@@ -6,13 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Tools\SupplierReconciliation\Domain\Side;
 use App\Tools\SupplierReconciliation\Http\Presenters\RunPresenter;
 use App\Tools\SupplierReconciliation\Http\Requests\UploadFileRequest;
-use App\Tools\SupplierReconciliation\Import\FileImporter;
-use App\Tools\SupplierReconciliation\Import\HeaderDetector;
-use App\Tools\SupplierReconciliation\Import\ImportedTable;
 use App\Tools\SupplierReconciliation\Import\ImportException;
-use App\Tools\SupplierReconciliation\Mapping\ColumnDetector;
 use App\Tools\SupplierReconciliation\Runs\ReconciliationRun;
 use App\Tools\SupplierReconciliation\Runs\RunAccess;
+use App\Tools\SupplierReconciliation\Runs\RunFiles;
 use App\Tools\SupplierReconciliation\Runs\UsageLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -46,7 +43,7 @@ class FileController extends Controller
     /**
      * The uploaded file is read from PHP's temporary upload and never stored.
      */
-    public function store(UploadFileRequest $request, ReconciliationRun $run, Side $side, FileImporter $importer): RedirectResponse
+    public function store(UploadFileRequest $request, ReconciliationRun $run, Side $side, RunFiles $files): RedirectResponse
     {
         $this->access->ensure($request, $run);
 
@@ -58,29 +55,13 @@ class FileController extends Controller
         }
 
         try {
-            $raw = $importer->import($path);
+            $sheet = $request->validated('sheet');
+            $raw = $files->attach($run, $side, $path, $file->getClientOriginalName(), (int) $file->getSize(), sheet: is_string($sheet) && $sheet !== '' ? $sheet : null);
         } catch (ImportException $e) {
             UsageLog::record('import_failed', $run, ['side' => $side->value, 'reason' => $e->getMessage()]);
 
             return back()->withErrors(['file' => $e->getMessage()]);
         }
-
-        $headerIndex = (new HeaderDetector)->detect($raw);
-        $mapping = (new ColumnDetector)->suggest(ImportedTable::fromRaw($raw, $headerIndex), $side, $headerIndex);
-        $name = mb_substr(basename(str_replace('\\', '/', $file->getClientOriginalName())), 0, 200);
-
-        $prefix = $side->value;
-        $run->{"{$prefix}_file"} = [
-            'name' => $name,
-            'size' => $file->getSize(),
-            'format' => $raw->format->value,
-            'format_label' => $raw->format->label(),
-            'details' => $raw->details,
-        ];
-        $run->{"{$prefix}_table"} = $raw->toArray();
-        $run->{"{$prefix}_mapping"} = $mapping->toArray();
-        $run->discardResult();
-        $run->save();
 
         UsageLog::record('file_imported', $run, ['side' => $side->value, 'format' => $raw->format->value, 'rows' => count($raw->rows)]);
 

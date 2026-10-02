@@ -4,6 +4,7 @@ namespace Tests\Feature\Tools\SupplierReconciliation;
 
 use App\Tools\SupplierReconciliation\Domain\Side;
 use App\Tools\SupplierReconciliation\Runs\ReconciliationRun;
+use App\Tools\SupplierReconciliation\Runs\RunAccess;
 use DateTimeImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -54,9 +55,12 @@ class ReconciliationFlowTest extends TestCase
 
     private function startRun(): ReconciliationRun
     {
-        $this->post(route('supplier-reconciliation.runs.store'))->assertRedirect();
+        $location = (string) $this->post(route('supplier-reconciliation.runs.store'))->assertRedirect()->headers->get('Location');
 
-        return ReconciliationRun::query()->latest()->firstOrFail();
+        // The run created by this request, even when several share the same second.
+        preg_match('#/runs/([0-9a-z]+)/#i', $location, $match);
+
+        return ReconciliationRun::query()->findOrFail($match[1] ?? '');
     }
 
     /**
@@ -73,6 +77,7 @@ class ReconciliationFlowTest extends TestCase
         $this->put(route('supplier-reconciliation.mapping.update', $run), [
             'statement' => $run->statement_mapping,
             'ledger' => $run->ledger_mapping,
+            'currency' => 'EUR',
         ])->assertRedirect(route('supplier-reconciliation.check', $run));
 
         return $run->refresh();
@@ -125,6 +130,7 @@ class ReconciliationFlowTest extends TestCase
         $this->put(route('supplier-reconciliation.mapping.update', $run), [
             'statement' => $run->statement_mapping,
             'ledger' => $run->ledger_mapping,
+            'currency' => 'EUR',
         ])->assertRedirect(route('supplier-reconciliation.check', $run));
 
         $this->get(route('supplier-reconciliation.check', $run))
@@ -237,6 +243,28 @@ class ReconciliationFlowTest extends TestCase
         $this->delete(route('supplier-reconciliation.runs.destroy', $run))->assertNotFound();
     }
 
+    public function test_the_owner_cookie_outlives_the_session_until_the_retention_ends(): void
+    {
+        $response = $this->post(route('supplier-reconciliation.runs.store'));
+        $cookie = $response->getCookie(RunAccess::COOKIE, decrypt: true);
+        $run = ReconciliationRun::query()->latest()->firstOrFail();
+
+        $this->assertNotNull($cookie);
+        $this->assertTrue($cookie->isHttpOnly());
+        $this->assertEqualsWithDelta(now()->addHours(24)->getTimestamp(), $cookie->getExpiresTime(), 5);
+
+        // The session expired, the browser still holds the cookie.
+        $this->flushSession();
+        $this->withCookie(RunAccess::COOKIE, (string) $cookie->getValue())
+            ->get(route('supplier-reconciliation.files.edit', $run))
+            ->assertOk();
+
+        $this->flushSession();
+        $this->withCookie(RunAccess::COOKIE, str_repeat('x', 64))
+            ->get(route('supplier-reconciliation.files.edit', $run))
+            ->assertNotFound();
+    }
+
     public function test_expired_runs_are_unavailable_and_purged(): void
     {
         $run = $this->preparedRun();
@@ -246,6 +274,85 @@ class ReconciliationFlowTest extends TestCase
 
         $this->artisan('supplier-reconciliation:purge')->assertSuccessful();
         $this->assertModelMissing($run);
+    }
+
+    public function test_the_currency_must_be_confirmed_and_changing_it_discards_results(): void
+    {
+        $run = $this->preparedRun();
+
+        $this->put(route('supplier-reconciliation.mapping.update', $run), [
+            'statement' => $run->statement_mapping,
+            'ledger' => $run->ledger_mapping,
+        ])->assertSessionHasErrors('currency');
+
+        $this->put(route('supplier-reconciliation.mapping.update', $run), [
+            'statement' => $run->statement_mapping,
+            'ledger' => $run->ledger_mapping,
+            'currency' => 'XYZ',
+        ])->assertSessionHasErrors('currency');
+
+        $this->post(route('supplier-reconciliation.reconcile', $run));
+        $this->assertTrue($run->refresh()->isReconciled());
+        $this->assertSame('EUR', $run->currency);
+
+        $this->put(route('supplier-reconciliation.mapping.update', $run), [
+            'statement' => $run->statement_mapping,
+            'ledger' => $run->ledger_mapping,
+            'currency' => 'GBP',
+        ])->assertRedirect(route('supplier-reconciliation.check', $run));
+
+        $this->assertFalse($run->refresh()->isReconciled());
+        $this->assertSame('GBP', $run->currency);
+    }
+
+    public function test_another_sheet_of_a_workbook_can_be_read(): void
+    {
+        $run = $this->startRun();
+        $workbook = fn (): UploadedFile => new UploadedFile(Files::workbook([
+            'Cover' => [['ACME Building Supplies'], ['Statement']],
+            'August' => [['Date', 'Ref', 'Amount'], ['01/08/2026', 'INV-1', 10]],
+            'September' => [['Date', 'Ref', 'Amount'], ['01/09/2026', 'INV-9', 90], ['02/09/2026', 'INV-10', 5]],
+        ]), 'statements.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
+
+        $this->post(route('supplier-reconciliation.files.store', [$run, 'statement']), ['file' => $workbook()])->assertSessionHasNoErrors();
+
+        $this->get(route('supplier-reconciliation.files.edit', $run))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('files.statement.sheets', ['Cover', 'August', 'September'])
+                ->where('files.statement.details.sheet', 'September (3 of 3)')
+                ->where('files.statement.rows', 2));
+
+        $this->post(route('supplier-reconciliation.files.store', [$run, 'statement']), ['file' => $workbook(), 'sheet' => 'August'])->assertSessionHasNoErrors();
+
+        $this->get(route('supplier-reconciliation.files.edit', $run))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('files.statement.details.sheet', 'August (2 of 3)')
+                ->where('files.statement.rows', 1));
+
+        $this->post(route('supplier-reconciliation.files.store', [$run, 'statement']), ['file' => $workbook(), 'sheet' => 'October'])
+            ->assertSessionHasErrors(['file' => 'The workbook has no sheet with this name. Choose one of its sheets.']);
+    }
+
+    public function test_the_reference_column_follows_the_other_file_whatever_the_upload_order(): void
+    {
+        $ledger = fn (): UploadedFile => new UploadedFile(Files::text("Document No.,External Document No.,Posting Date,Amount\nPI-001842,KIS-24581,03/09/2026,100.00\nPI-001851,KIS-24597,06/09/2026,50.00\nPI-001866,KIS24612,10/09/2026,20.00\n"), 'ledger.csv', 'text/csv', null, true);
+        $statement = fn (): UploadedFile => new UploadedFile(Files::text("Invoice No,Date,Amount\nKIS-24581,02/09/2026,100.00\nKIS-24597,05/09/2026,50.00\nKIS-24612,09/09/2026,20.00\n"), 'statement.csv', 'text/csv', null, true);
+
+        // Ledger first: nothing to compare with yet, then revisited when the statement arrives.
+        $run = $this->startRun();
+        $this->post(route('supplier-reconciliation.files.store', [$run, 'ledger']), ['file' => $ledger()]);
+        $this->assertSame(0, $run->refresh()->ledger_mapping['columns']['reference']);
+        $this->post(route('supplier-reconciliation.files.store', [$run, 'statement']), ['file' => $statement()]);
+        $this->assertSame(1, $run->refresh()->ledger_mapping['columns']['reference']);
+
+        // A mapping changed by the user is left alone.
+        $run = $this->startRun();
+        $this->post(route('supplier-reconciliation.files.store', [$run, 'ledger']), ['file' => $ledger()]);
+        $mapping = $run->refresh()->ledger_mapping;
+        $mapping['decimal_separator'] = 'comma';
+        $run->forceFill(['ledger_mapping' => $mapping])->save();
+        $this->post(route('supplier-reconciliation.files.store', [$run, 'statement']), ['file' => $statement()]);
+        $this->assertSame(0, $run->refresh()->ledger_mapping['columns']['reference']);
     }
 
     public function test_the_user_can_delete_their_data(): void
@@ -286,6 +393,7 @@ class ReconciliationFlowTest extends TestCase
         $this->put(route('supplier-reconciliation.mapping.update', $run), [
             'statement' => $mapping,
             'ledger' => $run->ledger_mapping,
+            'currency' => 'EUR',
         ]);
 
         $this->get(route('supplier-reconciliation.check', $run))
@@ -308,6 +416,7 @@ class ReconciliationFlowTest extends TestCase
         $this->put(route('supplier-reconciliation.mapping.update', $run), [
             'statement' => $mapping,
             'ledger' => $run->ledger_mapping,
+            'currency' => 'EUR',
         ])->assertSessionHasErrors('statement.columns.reference');
     }
 

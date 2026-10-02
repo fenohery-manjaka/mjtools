@@ -9,6 +9,8 @@ use App\Tools\SupplierReconciliation\Domain\Transaction;
 use App\Tools\SupplierReconciliation\Import\ImportedTable;
 use App\Tools\SupplierReconciliation\Normalization\AmountParser;
 use App\Tools\SupplierReconciliation\Normalization\BalanceLineDetector;
+use App\Tools\SupplierReconciliation\Normalization\CurrencyDetector;
+use App\Tools\SupplierReconciliation\Normalization\CurrencyMark;
 use App\Tools\SupplierReconciliation\Normalization\DateParser;
 use App\Tools\SupplierReconciliation\Normalization\DocumentTypeClassifier;
 use App\Tools\SupplierReconciliation\Normalization\ReferenceNormalizer;
@@ -28,6 +30,7 @@ final class TransactionBuilder
         private readonly DateParser $dates = new DateParser,
         private readonly DocumentTypeClassifier $types = new DocumentTypeClassifier,
         private readonly BalanceLineDetector $balanceLines = new BalanceLineDetector,
+        private readonly CurrencyDetector $currencies = new CurrencyDetector,
     ) {}
 
     public function build(ImportedTable $table, ColumnMapping $mapping, Side $side): BuiltTransactions
@@ -36,6 +39,9 @@ final class TransactionBuilder
         $rowIssues = [];
         $filteredOut = 0;
         $ignored = 0;
+        /** @var array<string, array{mark: CurrencyMark, lines: int}> $currencyLines */
+        $currencyLines = [];
+        $runningBalances = [];
 
         foreach ($table->rows as $row) {
             $original = $this->originalValues($row['cells'], $mapping);
@@ -44,8 +50,16 @@ final class TransactionBuilder
                 continue;
             }
 
-            // Free text lines (notes, messages) carry no reference, date or amount.
-            if (array_intersect_key($original, array_flip(['reference', 'date', 'amount', 'debit', 'credit'])) === []) {
+            // Paged exports print the header row again on every page.
+            if ($this->repeatsHeader($row['cells'], $table->headers)) {
+                $ignored++;
+
+                continue;
+            }
+
+            $isBalanceLine = $this->isBalanceLine($original, $row['cells']);
+
+            if (! $isBalanceLine && $this->isFreeText($original, $mapping)) {
                 $ignored++;
 
                 continue;
@@ -63,6 +77,7 @@ final class TransactionBuilder
                 rowNumber: $row['number'],
                 original: $original,
                 mapping: $mapping,
+                isBalanceLine: $isBalanceLine,
             );
 
             if ($transaction->issues !== []) {
@@ -70,15 +85,35 @@ final class TransactionBuilder
             }
 
             $transactions[] = $transaction;
+
+            $balance = $this->runningBalance($original, $mapping);
+
+            if ($balance !== null) {
+                $runningBalances[$row['number']] = $balance;
+            }
+
+            $mark = $this->lineCurrency($original);
+
+            if ($mark !== null) {
+                $currencyLines[$mark->label] ??= ['mark' => $mark, 'lines' => 0];
+                $currencyLines[$mark->label]['lines']++;
+            }
         }
 
-        return new BuiltTransactions($transactions, $rowIssues, $filteredOut, $ignored);
+        return new BuiltTransactions(
+            $transactions,
+            $rowIssues,
+            $filteredOut,
+            $ignored,
+            new CurrencyEvidence($currencyLines, $this->headerCurrency($table, $mapping)),
+            $runningBalances,
+        );
     }
 
     /**
      * @param  array<string, string>  $original
      */
-    private function transaction(string $id, Side $side, int $rowNumber, array $original, ColumnMapping $mapping): Transaction
+    private function transaction(string $id, Side $side, int $rowNumber, array $original, ColumnMapping $mapping, bool $isBalanceLine): Transaction
     {
         $issues = [];
         $notes = [];
@@ -121,12 +156,81 @@ final class TransactionBuilder
             documentType: $this->types->classify($typeText, $reference, $amount),
             issues: $issues,
             amountNotes: $notes,
-            isBalanceLine: $this->balanceLines->isBalanceLine([
-                $original[Field::Reference->value] ?? null,
-                $typeText,
-                $original[Field::Description->value] ?? null,
-            ]),
+            isBalanceLine: $isBalanceLine,
         );
+    }
+
+    /**
+     * A row whose filled cells are exactly the column headers, at the same
+     * places, is the header printed again (page break), not a transaction.
+     *
+     * @param  list<string>  $cells
+     * @param  list<string>  $headers
+     */
+    private function repeatsHeader(array $cells, array $headers): bool
+    {
+        $filled = 0;
+
+        foreach ($cells as $index => $cell) {
+            $value = mb_strtolower(trim($cell));
+
+            if ($value === '') {
+                continue;
+            }
+
+            if ($value !== mb_strtolower(trim($headers[$index] ?? ''))) {
+                return false;
+            }
+
+            $filled++;
+        }
+
+        return $filled >= 2;
+    }
+
+    /**
+     * Running balance of a line, with the file's sign convention applied so
+     * that it reads from the supplier statement's point of view.
+     *
+     * @param  array<string, string>  $original
+     */
+    private function runningBalance(array $original, ColumnMapping $mapping): ?Amount
+    {
+        $balance = $this->amounts->parse($original[Field::Balance->value] ?? null, $mapping->decimalSeparator)->amount;
+
+        $inverted = $mapping->amountMode === AmountMode::Signed
+            ? $mapping->invoiceSign === ColumnMapping::INVOICES_NEGATIVE
+            : $mapping->invoiceColumn === ColumnMapping::INVOICES_IN_CREDIT;
+
+        return $inverted ? $balance?->negate() : $balance;
+    }
+
+    /**
+     * Balances and totals are recognised by explicit wording only. Group
+     * totals ("Total for ACME Ltd") are also searched in unmapped cells, but
+     * only on lines without reference or date, where they cannot hide a
+     * document.
+     *
+     * @param  array<string, string>  $original
+     * @param  list<string>  $cells
+     */
+    private function isBalanceLine(array $original, array $cells): bool
+    {
+        $texts = [
+            $original[Field::Reference->value] ?? null,
+            $original[Field::Type->value] ?? null,
+            $original[Field::Description->value] ?? null,
+        ];
+
+        if ($this->balanceLines->isBalanceLine($texts)) {
+            return true;
+        }
+
+        if (isset($original[Field::Reference->value]) || isset($original[Field::Date->value])) {
+            return false;
+        }
+
+        return $this->balanceLines->isGroupTotal([...$texts, ...$cells]);
     }
 
     /**
@@ -208,6 +312,69 @@ final class TransactionBuilder
     private function unusedAmountFields(ColumnMapping $mapping): array
     {
         return $mapping->amountMode === AmountMode::Signed ? [Field::Debit, Field::Credit] : [Field::Amount];
+    }
+
+    /**
+     * Currency written on a line: its currency column first, otherwise the
+     * amount cells. Text in a currency column that is not a known code is
+     * kept as its own currency so that it can never be compared silently.
+     *
+     * @param  array<string, string>  $original
+     */
+    private function lineCurrency(array $original): ?CurrencyMark
+    {
+        $column = $original[Field::Currency->value] ?? null;
+
+        if ($column !== null) {
+            return $this->currencies->detect($column) ?? new CurrencyMark(trim($column), []);
+        }
+
+        foreach ([Field::Amount, Field::Debit, Field::Credit] as $field) {
+            $mark = $this->currencies->detect($original[$field->value] ?? null);
+
+            if ($mark !== null) {
+                return $mark;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Currency announced by the header of the amount column(s): "Amount (EUR)".
+     */
+    private function headerCurrency(ImportedTable $table, ColumnMapping $mapping): ?CurrencyMark
+    {
+        $fields = $mapping->amountMode === AmountMode::Signed ? [Field::Amount] : [Field::Debit, Field::Credit];
+
+        foreach ($fields as $field) {
+            $column = $mapping->column($field);
+            $mark = $column === null ? null : $this->currencies->detectInHeader($table->headers[$column] ?? null);
+
+            if ($mark !== null) {
+                return $mark;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Free text lines (notes, messages, footers) carry no reference, no amount
+     * and no readable date — even when the text sits in the date column. They
+     * cannot describe a transaction; they are counted, not reconciled.
+     *
+     * @param  array<string, string>  $original
+     */
+    private function isFreeText(array $original, ColumnMapping $mapping): bool
+    {
+        if (array_intersect_key($original, array_flip(['reference', 'amount', 'debit', 'credit'])) !== []) {
+            return false;
+        }
+
+        $date = $original[Field::Date->value] ?? null;
+
+        return $date === null || $this->dates->parse($date, $mapping->dateOrder)->date === null;
     }
 
     /**

@@ -2,10 +2,12 @@
 
 namespace App\Tools\SupplierReconciliation\Mapping;
 
+use App\Tools\SupplierReconciliation\Domain\Amount;
 use App\Tools\SupplierReconciliation\Domain\DocumentType;
 use App\Tools\SupplierReconciliation\Domain\Side;
 use App\Tools\SupplierReconciliation\Import\ImportedTable;
 use App\Tools\SupplierReconciliation\Normalization\AmountParser;
+use App\Tools\SupplierReconciliation\Normalization\CurrencyDetector;
 use App\Tools\SupplierReconciliation\Normalization\DocumentTypeClassifier;
 use App\Tools\SupplierReconciliation\Normalization\ReferenceNormalizer;
 
@@ -22,11 +24,15 @@ final class ColumnDetector
         'amount' => '/\b(amount|montant|total|gross|value|valeur|net|sum|ttc|importe|betrag)\b/iu',
         'debit' => '/^\s*(debit|débit|dr|debit amount|debits)\s*$/iu',
         'credit' => '/^\s*(credit|crédit|cr|credit amount|credits)\s*$/iu',
+        // Statement layouts that split amounts into what is charged and what is paid.
+        'charges' => '/^\s*(charges?|invoiced|invoices|billed|amount charged|factur[ée]s?)\s*$/iu',
+        'payments' => '/^\s*(payments?|paid|receipts?|payments received|credits received|règlements?|paiements?)\s*$/iu',
         'balance' => '/\b(balance|solde|running|cumul|outstanding)\b/iu',
         'reference' => '/\b(ref|reference|référence|invoice|inv|document|doc|no|nº|n°|number|num|numéro|facture|pièce|piece|voucher|external)\b/iu',
         'type' => '/\b(type|nature|kind|doc(ument)? type|transaction type|trans type)\b/iu',
-        'description' => '/\b(description|libellé|libelle|details|memo|narrative|text|label|comment|particulars)\b/iu',
+        'description' => '/\b(description|libellé|libelle|désignation|designation|details|memo|narrative|text|label|comment|particulars)\b/iu',
         'supplier' => '/\b(supplier|vendor|fournisseur|creditor|tiers|payee|account name)\b/iu',
+        'currency' => '/^\s*(currency|curr\.?|ccy|cur|devise|monnaie|currency code)\s*$/iu',
     ];
 
     public function __construct(
@@ -86,8 +92,8 @@ final class ColumnDetector
             default => 0.0,
         });
 
-        $pick(Field::Debit->value, fn (ColumnProfile $s): float => $matches('debit', $s->header) && $s->amountRatio >= 0.8 ? 1.0 : 0.0);
-        $pick(Field::Credit->value, fn (ColumnProfile $s): float => $matches('credit', $s->header) && $s->amountRatio >= 0.8 ? 1.0 : 0.0);
+        $pick(Field::Debit->value, fn (ColumnProfile $s): float => ($matches('debit', $s->header) || $matches('charges', $s->header)) && $s->amountRatio >= 0.8 ? 1.0 : 0.0);
+        $pick(Field::Credit->value, fn (ColumnProfile $s): float => ($matches('credit', $s->header) || $matches('payments', $s->header)) && $s->amountRatio >= 0.8 ? 1.0 : 0.0);
 
         $pick(Field::Amount->value, fn (ColumnProfile $s): float => match (true) {
             $matches('balance', $s->header) => 0.0,
@@ -97,6 +103,10 @@ final class ColumnDetector
         });
 
         $pick(Field::Type->value, fn (ColumnProfile $s): float => $matches('type', $s->header) && ! $matches('date', $s->header) ? 1.0 : 0.0);
+
+        $pick(Field::Balance->value, fn (ColumnProfile $s): float => $matches('balance', $s->header) && $s->amountRatio >= 0.6 ? 1.0 : 0.0);
+
+        $pick(Field::Currency->value, fn (ColumnProfile $s): float => $matches('currency', $s->header) || $this->currencyCodeRatio($s) >= 0.8 ? 1.0 : 0.0);
 
         $pick(Field::Reference->value, fn (ColumnProfile $s): float => $this->referenceScore($s, $matches('reference', $s->header), $matches('date', $s->header)));
 
@@ -135,15 +145,112 @@ final class ColumnDetector
             decimalSeparator: $separator,
         );
 
+        // "Outstanding" or "Remaining" per document is not a running balance.
+        if (isset($columns[Field::Balance->value]) && ! $this->behavesAsRunningBalance($table, $mapping)) {
+            unset($columns[Field::Balance->value]);
+        }
+
         return new ColumnMapping(
             headerIndex: $headerIndex,
             columns: $columns,
             amountMode: $amountMode,
             invoiceSign: $amountMode === AmountMode::Signed ? $this->suggestInvoiceSign($table, $mapping) : ColumnMapping::INVOICES_POSITIVE,
-            invoiceColumn: $side === Side::Ledger ? ColumnMapping::INVOICES_IN_CREDIT : ColumnMapping::INVOICES_IN_DEBIT,
+            invoiceColumn: $this->suggestInvoiceColumn($table, $columns, $side, $matches),
             dateOrder: $dateOrder,
             decimalSeparator: $separator,
         );
+    }
+
+    /**
+     * A running balance changes by the amount of each line. Checked on the
+     * sample, in absolute value so that any sign convention passes.
+     */
+    private function behavesAsRunningBalance(ImportedTable $table, ColumnMapping $mapping): bool
+    {
+        $balanceColumn = $mapping->column(Field::Balance);
+
+        if ($balanceColumn === null) {
+            return false;
+        }
+
+        $previous = null;
+        $comparable = 0;
+        $consistent = 0;
+
+        foreach (array_slice($table->rows, 0, self::SAMPLE_ROWS) as $row) {
+            $balance = $this->amounts->parse($row['cells'][$balanceColumn] ?? '', $mapping->decimalSeparator)->amount;
+            $amount = $this->lineAmount($row['cells'], $mapping);
+
+            if ($balance === null) {
+                continue;
+            }
+
+            if ($previous !== null && $amount !== null && ! $amount->isZero()) {
+                $comparable++;
+                $consistent += $balance->minus($previous)->abs()->equals($amount->abs()) ? 1 : 0;
+            }
+
+            $previous = $balance;
+        }
+
+        return $comparable >= 2 && $consistent / $comparable >= 0.6;
+    }
+
+    /**
+     * @param  list<string>  $cells
+     */
+    private function lineAmount(array $cells, ColumnMapping $mapping): ?Amount
+    {
+        if ($mapping->amountMode === AmountMode::Signed) {
+            $column = $mapping->column(Field::Amount);
+
+            return $column === null ? null : $this->amounts->parse($cells[$column] ?? '', $mapping->decimalSeparator)->amount;
+        }
+
+        $debit = $mapping->column(Field::Debit);
+        $credit = $mapping->column(Field::Credit);
+        $debitAmount = $debit === null ? null : $this->amounts->parse($cells[$debit] ?? '', $mapping->decimalSeparator)->amount;
+        $creditAmount = $credit === null ? null : $this->amounts->parse($cells[$credit] ?? '', $mapping->decimalSeparator)->amount;
+
+        if ($debitAmount === null && $creditAmount === null) {
+            return null;
+        }
+
+        return ($debitAmount ?? Amount::fromUnits(0))->minus($creditAmount ?? Amount::fromUnits(0));
+    }
+
+    /**
+     * A "Charges" column holds invoices whatever the file. Otherwise invoices
+     * are usually debits on a supplier statement and credits in an AP ledger.
+     *
+     * @param  array<string, int>  $columns
+     * @param  callable(string, string): bool  $matches
+     */
+    private function suggestInvoiceColumn(ImportedTable $table, array $columns, Side $side, callable $matches): string
+    {
+        $debit = $columns[Field::Debit->value] ?? null;
+
+        if ($debit !== null && $matches('charges', $table->headers[$debit] ?? '')) {
+            return ColumnMapping::INVOICES_IN_DEBIT;
+        }
+
+        return $side === Side::Ledger ? ColumnMapping::INVOICES_IN_CREDIT : ColumnMapping::INVOICES_IN_DEBIT;
+    }
+
+    /**
+     * Share of filled cells that are exactly an ISO currency code.
+     */
+    private function currencyCodeRatio(ColumnProfile $s): float
+    {
+        $values = array_values(array_filter($s->values, fn (string $v): bool => trim($v) !== ''));
+
+        if ($values === []) {
+            return 0.0;
+        }
+
+        $codes = CurrencyDetector::codes();
+
+        return count(array_filter($values, fn (string $v): bool => in_array(strtoupper(trim($v)), $codes, true))) / count($values);
     }
 
     private function referenceScore(ColumnProfile $s, bool $headerMatches, bool $isDateHeader): float

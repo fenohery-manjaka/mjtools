@@ -5,6 +5,7 @@ namespace App\Tools\SupplierReconciliation\Http\Requests;
 use App\Tools\SupplierReconciliation\Mapping\AmountMode;
 use App\Tools\SupplierReconciliation\Mapping\ColumnMapping;
 use App\Tools\SupplierReconciliation\Mapping\Field;
+use App\Tools\SupplierReconciliation\Normalization\CurrencyDetector;
 use App\Tools\SupplierReconciliation\Normalization\DateOrder;
 use App\Tools\SupplierReconciliation\Normalization\DecimalSeparator;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -18,7 +19,9 @@ class UpdateMappingRequest extends FormRequest
      */
     public function rules(): array
     {
-        $rules = [];
+        $rules = [
+            'currency' => ['required', 'string', Rule::in(CurrencyDetector::codes())],
+        ];
 
         foreach (['statement', 'ledger'] as $side) {
             $rules[$side] = ['required', 'array'];
